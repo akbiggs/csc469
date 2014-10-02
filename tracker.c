@@ -64,10 +64,6 @@ int main(int argc, char** argv) {
                i, start + active_dur, inactive_dur, cycles_to_ms(inactive_dur));
 
        start += active_dur + inactive_dur;
-       
-       // printf("Sample %d\n", i);
-       // printf("%" PRIu64 "\n", samples[i*2]);
-       // printf("%" PRIu64 "\n", samples[i*2+1]);
     }
 
     return 0;
