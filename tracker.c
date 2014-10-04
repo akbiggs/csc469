@@ -11,9 +11,6 @@ u_int64_t inactive_periods(int num, u_int64_t threshold, u_int64_t *samples) {
     u_int64_t prev_counter = start_active;
     u_int64_t cur_counter = start_active;
 
-    // BUG: Two samples are always taken at once using this logic for some
-    // reason. Is that expected behavior?
-    
     int num_sampled = 0;
     while (num_sampled < num) {
         while (cur_counter - prev_counter <= threshold) {
@@ -26,10 +23,13 @@ u_int64_t inactive_periods(int num, u_int64_t threshold, u_int64_t *samples) {
         samples[num_sampled*2] = prev_counter;
         samples[num_sampled*2 + 1] = cur_counter;
 
-        prev_counter = cur_counter;
-        cur_counter = get_counter();
-
         num_sampled++;
+
+        // make counters equal to avoid having the time taken spent printing
+        // out information, adding samples and incrementing being taken into
+        // account
+        prev_counter = get_counter();
+        cur_counter = prev_counter;
     }
 
     return start_active;
@@ -47,6 +47,7 @@ int main(int argc, char** argv) {
     }
 
     int num_samples = atoi(argv[1]);
+    // TODO: need to figure out how to determine the threshold experimentally
     int threshold = atoi(argv[2]);
     u_int64_t samples[num_samples*2];
 
@@ -64,6 +65,8 @@ int main(int argc, char** argv) {
                i, start + active_dur, inactive_dur, cycles_to_ms(inactive_dur));
 
        start += active_dur + inactive_dur;
+
+       // TODO: Plot this shit.
     }
 
     return 0;
