@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <math.h>
 #include <time.h>
 
 #include "tracker.h"
@@ -28,7 +29,7 @@ u_int64_t inactive_periods(int num, u_int64_t threshold, u_int64_t *samples) {
             cur_counter = get_counter();
         }
 
-        printf("adding sample %d\n", num_sampled);
+        //printf("adding sample %d\n", num_sampled);
 
         samples[num_sampled*2] = prev_counter;
         samples[num_sampled*2 + 1] = cur_counter;
@@ -142,12 +143,12 @@ void find_threshold() {
 
 float cycles_to_ms(u_int64_t cycles) {
     // TODO: Experiment to figure out how these actually relate.
-    return (float)(cycles / 1000.0f);
+    return (float)(cycles / 100000.0f);
 }
 
 int main(int argc, char** argv) {
     if (argc != 3) {
-        printf("Usage: %s <num_samples> <threshold>\n", argv[0]);
+        fprintf(stderr, "Usage: %s <num_samples> <threshold>\n", argv[0]);
         return -1;
     }
     
@@ -173,8 +174,60 @@ int main(int argc, char** argv) {
                i, start + active_dur, inactive_dur, cycles_to_ms(inactive_dur));
 
        start += active_dur + inactive_dur;
-       // TODO: Plot this shit.
     }
+
+    if (plot_samples("runplot.sh", samples, num_samples, cycles_to_ms(start))) {
+        fprintf(stderr, "Failed to write samples to a gnuplot file.\n");
+    }
+
+    return 0;
+}
+
+int plot_samples(char* filename, u_int64_t* samples, int num_samples, float start_ms) {
+    FILE* plot_file = fopen(filename, "w");
+    if (!plot_file) {
+        return -1;
+    }
+
+    fputs("#!/bin/sh\n", plot_file);
+    fputs("gnuplot << ---EOF---\n", plot_file);
+    fputs("set title \"Active and Inactive Periods\"\n", plot_file);
+    fputs("set xlabel \"Time (ms)\"\n", plot_file);
+    fputs("set nokey\n", plot_file);
+    fputs("set noytics\n", plot_file);
+    fputs("set term postscript eps 10\n", plot_file);
+    fputs("set size 0.45,0.35\n", plot_file);
+    fputs("set output \"activeperiods.eps\"\n", plot_file);
+
+    float millis_elapsed = 0;
+    float cumulative_millis = 0;
+    
+    if (num_samples != 0) {
+        
+        int i;
+        for (i = 0; i < num_samples*2; i++) {
+
+            u_int64_t next_time = samples[i];
+	    char* color;
+            if (i % 2 == 0) {
+                color = "blue"; // active
+            } else {
+		color = "red"; // inactive
+            }
+            
+            cumulative_millis = cycles_to_ms(next_time);
+
+	    fprintf(plot_file, "set object %d rect from %f, 1 to %f, 2 fc rgb \"%s\" fs solid\n",
+		    i + 1, millis_elapsed, cumulative_millis, color);
+	    
+	    millis_elapsed = cumulative_millis;
+        }
+    }
+
+    fprintf(plot_file, "plot [0:%f] [0:3] 0\n", cumulative_millis);
+    fputs("---EOF---\n", plot_file);
+
+    fclose(plot_file);
 
     return 0;
 }
