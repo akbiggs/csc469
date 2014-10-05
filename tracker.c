@@ -10,6 +10,7 @@
 // TODO: write run_test_experiment_A bash file
 // TODO: write the threshold finder code
 // TODO: do clock to ms
+
 // TOOD?: Understand how proc/interupts matters
 // TODO?: Understand ratio argument
 
@@ -44,39 +45,83 @@ u_int64_t inactive_periods(int num, u_int64_t threshold, u_int64_t *samples) {
     return start_active;
 }
 
-void find_threshold() { 
-	int iterations = 1000000;
-	int max_threshold = 200;
-	int min_threshold = 50;
-	int threshold_sample_interval = 1;
-	
-	int size = 10000;
-	int samples[size];
-
-	int a;
-	for (a = 0; a < 100; a++) {
-		u_int64_t prev_counter = get_counter();
-		samples[1] = 1;
-		u_int64_t cur_counter = get_counter();
-		printf("[1] -- %d\n", cur_counter - prev_counter);
-	}
+/**
+ * Tests cache miss time by comparing array gets and sets when accessing the
+ * same element repeatidly versus accessing random elements.
+ */
+void test_cache_miss_time() {
 	srand(time(NULL));
-	for (a = 0; a < 100; a++) {
-		int a = rand() % size;
-		int b = rand() % size;
-		int c = rand() % size;
-		int d = rand() % size;
-		u_int64_t prev_counter = get_counter();
-		samples[a] = 2;
-		u_int64_t cur_counter = get_counter();
-		printf("[%d] -- %d\n", a, cur_counter - prev_counter);
+	int i, j;
+	int array_size = 100;
+	int** array = (int **)malloc(sizeof(int *)*array_size);
+	for(i = 0; i < array_size; i++) {
+	  array[i] = (int *)malloc(sizeof(int)*array_size);
 	}
+	int averaging_iterations = 100000000;
+	printf("== TESTING CACHE MISS TIME ==\nArray of size %d averaging over %d iterations.\n", array_size, averaging_iterations);
+	
+	int zero = 0;
+	zero += 1;
+	zero -= 1;
+	u_int64_t prev_counter, cur_counter;
+	
+	// Warm up the cache...
+	int sum = 0;
+	for (i = 0; i < array_size; i++) {
+		for (j = 0; j < array_size; j++) {
+			sum += array[i][j];
+		}
+	}
+	
+	// Test the time to get and set the same element over and over.
+	prev_counter = get_counter();
+	increment_array(array, averaging_iterations, 1);
+	cur_counter = get_counter();
+	int average_repeat = (cur_counter - prev_counter) / averaging_iterations;
+	printf("Repeated Access -- %d cycles on average\n", average_repeat);
+
+	// Test the time to get and set random elements over and over.
+	prev_counter = get_counter();
+	increment_array(array, averaging_iterations, array_size);
+	cur_counter = get_counter();
+	int average_random = (cur_counter - prev_counter) / averaging_iterations;
+	printf("Random Access -- %d cycles on average\n", average_random);
+
+	// Add up the values so the compiler knows we need them.
+	sum = 0;
+	for (i = 0; i < array_size; i++) {
+		for (j = 0; j < array_size; j++) {
+			sum += array[i][j];
+		}
+	}
+	for(i = 0; i < array_size; i++) {
+	  free(array[i]);
+	}
+	free(array);
+	
+	printf("Sum of array -- %d\n", sum);
+	printf("Cache miss time is roughly -- %d\n", average_random - average_repeat);
+}
+
+void increment_array(int** array, int increments, int max_array_index_select) {
+	int i;
+	for (i = 0; i < increments; i++) {
+		int posx = rand() % max_array_index_select;
+		int posy = rand() % max_array_index_select;
+		array[posx][posy] += 1;
+	}
+}
+
+void find_threshold() { 
+	int iterations = 10000;
+	int min_threshold = 60;
+	int max_threshold = 200;
+	int threshold_sample_interval = 1;
 	
 	int threshold;
 	for (threshold = min_threshold; threshold < max_threshold; threshold += threshold_sample_interval) {
 		u_int64_t cur_counter = get_counter();
 		u_int64_t prev_counter = cur_counter;
-		
 		
 		int inactive_count = 0;
 		int i = 0;
@@ -90,7 +135,7 @@ void find_threshold() {
 			prev_counter = cur_counter;
 		}
 		int average_diff = sum_diff / iterations;
-		printf("threshold %d: %d inactive periods (average_diff = %d / %d = %d)\n", threshold, inactive_count, sum_diff, iterations, average_diff);
+		//printf("threshold %d: %d inactive periods (average_diff = %d / %d = %d)\n", threshold, inactive_count, sum_diff, iterations, average_diff);
 		
 	}
 }
@@ -106,6 +151,7 @@ int main(int argc, char** argv) {
         return -1;
     }
     
+    test_cache_miss_time();
     find_threshold();
 
     int num_samples = atoi(argv[1]);
