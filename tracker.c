@@ -98,7 +98,7 @@ void find_threshold() {
 
 float cycles_to_ms(u_int64_t cycles) {
     // TODO: Experiment to figure out how these actually relate.
-    return (float)(cycles / 1000.0f);
+    return (float)(cycles / 100000.0f);
 }
 
 int main(int argc, char** argv) {
@@ -130,14 +130,14 @@ int main(int argc, char** argv) {
        start += active_dur + inactive_dur;
     }
 
-    if (plot_samples("what.eps", samples)) {
+    if (plot_samples("runplot.sh", samples, num_samples, cycles_to_ms(start))) {
         fprintf(stderr, "Failed to write samples to a gnuplot file.\n");
     }
 
     return 0;
 }
 
-int plot_samples(char* filename, u_int64_t* samples) {
+int plot_samples(char* filename, u_int64_t* samples, int num_samples, float start_ms) {
     FILE* plot_file = fopen(filename, "w");
     if (!plot_file) {
         return -1;
@@ -153,37 +153,32 @@ int plot_samples(char* filename, u_int64_t* samples) {
     fputs("set size 0.45,0.35\n", plot_file);
     fputs("set output \"activeperiods.eps\"\n", plot_file);
 
-    int millis_elapsed = 0;
-    if (sizeof(samples) != 0) {
+    float millis_elapsed = 0;
+    float cumulative_millis = 0;
+    
+    if (num_samples != 0) {
         
-        int num_samples = sizeof(samples) / sizeof(samples[0]);
-        printf("Number of samples %d\n", num_samples);
-        int cumulative_millis = 0;
         int i;
-        for (i = 0; i < num_samples; i++) {
-            u_int64_t start = samples[i * 2];
-            u_int64_t end = samples[i * 2 + 1];
-            
-            printf("%d\n", i);
-            
-            char* color;
+        for (i = 0; i < num_samples*2; i++) {
+
+            u_int64_t next_time = samples[i];
+	    char* color;
             if (i % 2 == 0) {
                 color = "blue"; // active
             } else {
-                color = "red"; // inactive
+		color = "red"; // inactive
             }
             
-            cumulative_millis += cycles_to_ms(end);
-            
-            while (millis_elapsed < cumulative_millis) {
-                fprintf(plot_file, "set object %d rect from %d, 1 to %d, 2 fc rgb \"%s\" fs solid\n",
-                        i + 1, millis_elapsed, millis_elapsed + 1, color);
-                millis_elapsed++;
-            }
+            cumulative_millis = cycles_to_ms(next_time);
+
+	    fprintf(plot_file, "set object %d rect from %f, 1 to %f, 2 fc rgb \"%s\" fs solid\n",
+		    i + 1, millis_elapsed, cumulative_millis, color);
+	    
+	    millis_elapsed = cumulative_millis;
         }
     }
 
-    fprintf(plot_file, "plot [0:%d] [0:3] 0\n", millis_elapsed);
+    fprintf(plot_file, "plot [0:%f] [0:3] 0\n", cumulative_millis);
     fputs("---EOF---\n", plot_file);
 
     fclose(plot_file);
