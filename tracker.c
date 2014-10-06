@@ -14,21 +14,21 @@
 // TOOD: Understand how proc/interupts matters
 
 int main(int argc, char** argv) {
-    if (argc != 3) {
-        fprintf(stderr, "Usage: %s <num_samples> <threshold>\n", argv[0]);
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <num_samples>\n", argv[0]);
         return -1;
     }
 
     int num_samples = atoi(argv[1]);
-    int threshold = atoi(argv[2]);
     u_int64_t samples[num_samples*2];
     
     test_cache_miss_time();
-    find_threshold(num_samples);
+    int threshold = find_threshold(5);
 
     start_counter();
     u_int64_t start = inactive_periods(num_samples, threshold, samples);
 
+	printf("== TRACKING ACTIVITY ==\n");
     int i;
     for (i = 0; i < num_samples; i++) {
        u_int64_t active_dur = samples[i*2] - start;
@@ -58,7 +58,7 @@ u_int64_t inactive_periods(int num, u_int64_t threshold, u_int64_t *samples) {
     int num_sampled = 0;
     while (num_sampled < num) {
 		
-		wait_until_inactive_period(&prev_counter, &cur_counter);
+		wait_until_inactive_period(threshold, &prev_counter, &cur_counter);
 
         //printf("adding sample %d\n", num_sampled);
 
@@ -77,62 +77,86 @@ u_int64_t inactive_periods(int num, u_int64_t threshold, u_int64_t *samples) {
     return start_active;
 }
 
-int wait_until_inactive_period(u_int64_t* prev_counter, u_int64_t* cur_counter) {
-	int cycle_count = 0;
-	while (cur_counter - prev_counter <= threshold) {
+int wait_until_inactive_period(int threshold, u_int64_t* prev_counter, u_int64_t* cur_counter) {
+	int count = 0;
+	while (*cur_counter - *prev_counter <= threshold) {
 		*prev_counter = *cur_counter;
 		*cur_counter = get_counter();
 		count++;
 	}
-    return cycle_count;
+    return count;
 }
 
-int find_threshold(int num) { 
-	int iterations_per_threshold = 5000;
-	int min_threshold = 40;
-	int max_threshold = 500;
-	int threshold_sample_interval = 2;
+int find_threshold(int num) {
+	
+	// Set the parameters for the threshold sampling.
+	int min_threshold = 50;
+	int max_threshold = 3000;
+	int threshold_sample_interval = 30;
 	
 	printf("== FINDING THRESHOLD ==\nFinding the ideal threshold from %d to %d.\n", min_threshold, max_threshold);
 	
-	// We iterate through all the thresholds to find the ideal one.
-	int threshold;
-	int last_inactive_count = 0;
+	int samples = (max_threshold - min_threshold) / threshold_sample_interval;
+	double threshold_percents[samples];
+	
+	// We iterate through all the thresholds to graph the time it takes for each threshold.
+	int threshold, index = 0;
 	for (threshold = min_threshold; threshold < max_threshold; threshold += threshold_sample_interval) {
 		
 		// Initalize the counter variables.
 		u_int64_t cur_counter = get_counter();
 		u_int64_t prev_counter = cur_counter;
 		
-		int i = 0;
-		int inactive_count = 0;
-		int sum_diff = 0;
-		
-		// Run the same that will be ran when finding inactive periods.
-		int cycles = 0;
+		// Run the same code that will be ran when finding inactive periods.
+		int iterations = 0;
 		int periods = 0;
 		while (periods < num) {
-			cycles += wait_until_inactive_period(&cur_counter, &cur_counter);
+			iterations += wait_until_inactive_period(threshold, &prev_counter, &cur_counter);
 			periods++;
+			prev_counter = get_counter();
+			cur_counter = prev_counter;
 		}
+
+		double percent = (num * 100) / (double)iterations;
+		//printf("Threshold %d: %d inactive periods in %d iterations. %f%% inactive periods per iteration\n", threshold, num, iterations, percent);
 		
-		for (i = 0; i < iterations_per_threshold; i++) {
-			cur_counter = get_counter();
-			sum_diff += cur_counter - prev_counter;
-			if (cur_counter - prev_counter > threshold) {
-				inactive_count++;
-			}
-			int j;
-			for (j = 0; j < 100; j++) { }
-			prev_counter = cur_counter;
-		}
-		int average_diff = sum_diff / iterations_per_threshold;
-		if (inactive_count != last_inactive_count) {
-			printf("Threshold %d: %d inactive periods (average_diff = %d / %d = %d)\n", threshold, inactive_count, sum_diff, iterations_per_threshold, average_diff);
-		}
-		last_inactive_count = inactive_count;
+		threshold_percents[index] = percent;
+		index++;
 	}
-	return 1;
+	
+	
+	// Set the parameters for the threshold search...
+	double desired_deviation = 0.005;
+	int desired_total = 25;
+	
+	int found_threshold = -1;
+	double average = threshold_percents[0];
+	int total = 1;
+	index = 1;
+	while (index < samples) {
+		if (total > desired_total) {
+			found_threshold = min_threshold + threshold_sample_interval * (index - total / 2);
+			break;
+			
+		} else if (fabs(threshold_percents[index] - average) > desired_deviation) {
+			// If the difference between the next sample and the average is too large, reset.
+			average = threshold_percents[index];
+			total = 1;
+			
+		} else {
+			// Adjust the running average.
+			average = ((average * total) / (total + 1)) + (threshold_percents[index] / (total + 1));
+			total++;
+		}
+		index++;
+	}
+	if (found_threshold == -1) {
+		printf("WARNING: Could not find a stable threshold, backing up to hardcoded... \n");
+		found_threshold = 750;
+	}
+	
+	printf("Using threshold: %d \n", found_threshold);
+	return found_threshold;
 }
 
 float cycles_to_ms(u_int64_t cycles) {
@@ -236,7 +260,7 @@ int plot_samples(char* filename, u_int64_t* samples, int num_samples, float star
             if (i % 2 == 0) {
                 color = "blue"; // active
             } else {
-		color = "red"; // inactive
+				color = "red"; // inactive
             }
             
             cumulative_millis = cycles_to_ms(next_time);
