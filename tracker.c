@@ -3,6 +3,8 @@
 #include <inttypes.h>
 #include <math.h>
 #include <time.h>
+#include <unistd.h>
+#include <limits.h>
 
 #include "tracker.h"
 #include "tsc.h"
@@ -98,8 +100,65 @@ int wait_until_inactive_period(int threshold, u_int64_t* prev_counter, u_int64_t
  * Converts cycles to milliseconds.
  */
 float cycles_to_ms(u_int64_t cycles) {
-    // TODO: Experiment to figure out how these actually relate.
+	static double MHz = -1;
+	
+	// If we haven't calculated MHz, do it now.
+	if (MHz == -1) {
+		struct timespec sleep_time;
+		sleep_time.tv_nsec = 1L;
+		sleep_time.tv_sec = 0;
+		
+		// Want to find the k best measures for the sleep cycles.
+		int i;
+		int k = 20;
+		int k_best_iterations[k] ;
+		for (i = 0; i < k; i++) {
+			k_best_iterations[i] = INT_MAX;
+		}
+		
+		// Warm up cache.
+		measure_sleep_cycles(&sleep_time);
+		
+		// Run iterations to measure sleep cycles multiple times.
+		int iterations = 100;
+		for (i = 0; i < iterations; i++) {
+			int count = measure_sleep_cycles(&sleep_time);
+			
+			// Check our current k best, to see if this is better.
+			int j;
+			for (j = 0; j < k; j++) {
+				if (count < k_best_iterations[j]) {
+					
+					// A better value was found, shift array and replace.
+					int h;
+					for (h = k-2; h >= j; h--) {
+						k_best_iterations[h+1] = k_best_iterations[h];
+					}
+					k_best_iterations[j] = count;
+					break;
+				} 
+			}
+		}
+		
+		// Sum and average the k best values.
+		int sum = 0;
+		for (i = 0; i < k; i++) {
+			sum += k_best_iterations[i];
+		}
+		
+		MHz = (sum / k) / 1000;
+		printf("Found clock speed: %f MHz\n", MHz); 
+	}
+
     return (float)(cycles / 100000.0f);
+}
+
+int measure_sleep_cycles(struct timespec *sleep_time) {
+	int start, end;
+	start = get_counter();
+	nanosleep(sleep_time, NULL);
+	end = get_counter();
+	return end - start;
 }
 
 /**
@@ -279,7 +338,7 @@ int plot_samples(char* filename, u_int64_t* samples, int num_samples, float star
         for (i = 0; i < num_samples*2; i++) {
 
             u_int64_t next_time = samples[i];
-	    char* color;
+			char* color;
             if (i % 2 == 0) {
                 color = "blue"; // active
             } else {
@@ -288,10 +347,8 @@ int plot_samples(char* filename, u_int64_t* samples, int num_samples, float star
             
             cumulative_millis = cycles_to_ms(next_time);
 
-	    fprintf(plot_file, "set object %d rect from %f, 1 to %f, 2 fc rgb \"%s\" fs solid\n",
-		    i + 1, millis_elapsed, cumulative_millis, color);
-	    
-	    millis_elapsed = cumulative_millis;
+			fprintf(plot_file, "set object %d rect from %f, 1 to %f, 2 fc rgb \"%s\" fs solid\n", i + 1, millis_elapsed, cumulative_millis, color);
+			millis_elapsed = cumulative_millis;
         }
     }
 
