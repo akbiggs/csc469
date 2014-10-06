@@ -7,12 +7,13 @@
 #include "tracker.h"
 #include "tsc.h"
 
-// TODO: figure out gnuplot
 // TODO: write run_test_experiment_A bash file
-// TODO: write the threshold finder code
 // TODO: do clock to ms
 // TOOD: Understand how proc/interupts matters
 
+/**
+ * Runs the experiment and outputs gnuplot input to be graphed.
+ */
 int main(int argc, char** argv) {
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <num_samples>\n", argv[0]);
@@ -49,6 +50,10 @@ int main(int argc, char** argv) {
     return 0;
 }
 
+/**
+ * Fills the samples array with values to indicate which cycles were
+ * spent on inactive periods.
+ */
 u_int64_t inactive_periods(int num, u_int64_t threshold, u_int64_t *samples) {
     u_int64_t start_active = get_counter();
 
@@ -59,8 +64,6 @@ u_int64_t inactive_periods(int num, u_int64_t threshold, u_int64_t *samples) {
     while (num_sampled < num) {
 		
 		wait_until_inactive_period(threshold, &prev_counter, &cur_counter);
-
-        //printf("adding sample %d\n", num_sampled);
 
         samples[num_sampled*2] = prev_counter;
         samples[num_sampled*2 + 1] = cur_counter;
@@ -77,6 +80,10 @@ u_int64_t inactive_periods(int num, u_int64_t threshold, u_int64_t *samples) {
     return start_active;
 }
 
+/**
+ * This continues to wait until a large cycle count is found, indicating
+ * an inactive period occured.
+ */ 
 int wait_until_inactive_period(int threshold, u_int64_t* prev_counter, u_int64_t* cur_counter) {
 	int count = 0;
 	while (*cur_counter - *prev_counter <= threshold) {
@@ -87,6 +94,20 @@ int wait_until_inactive_period(int threshold, u_int64_t* prev_counter, u_int64_t
     return count;
 }
 
+/**
+ * Converts cycles to milliseconds.
+ */
+float cycles_to_ms(u_int64_t cycles) {
+    // TODO: Experiment to figure out how these actually relate.
+    return (float)(cycles / 100000.0f);
+}
+
+/**
+ * Finds a good threshold by iteratively testing a range of thresholds
+ * in order to graph the average number of inactive periods found per
+ * iteration. It then makes a selection from a found threshold range
+ * that is long and varies little.
+ */
 int find_threshold(int num) {
 	
 	// Set the parameters for the threshold sampling.
@@ -159,11 +180,6 @@ int find_threshold(int num) {
 	return found_threshold;
 }
 
-float cycles_to_ms(u_int64_t cycles) {
-    // TODO: Experiment to figure out how these actually relate.
-    return (float)(cycles / 100000.0f);
-}
-
 /**
  * Tests cache miss time by comparing array gets and sets when accessing the
  * same element repeatidly versus accessing random elements.
@@ -222,6 +238,10 @@ void test_cache_miss_time() {
 	printf("Cache miss time is roughly -- %d\n", average_random - average_repeat);
 }
 
+/**
+ * Randomly increments a element in the array.
+ * Used to help test cache performance.
+ */
 void increment_array(int** array, int increments, int max_array_index_select) {
 	int i;
 	for (i = 0; i < increments; i++) {
@@ -231,6 +251,9 @@ void increment_array(int** array, int increments, int max_array_index_select) {
 	}
 }
 
+/**
+ * Produces a bash file that generates a graph for gnuplot.
+ */ 
 int plot_samples(char* filename, u_int64_t* samples, int num_samples, float start_ms) {
     FILE* plot_file = fopen(filename, "w");
     if (!plot_file) {
