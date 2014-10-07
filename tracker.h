@@ -1,3 +1,13 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <inttypes.h>
+#include <math.h>
+#include <time.h>
+#include <unistd.h>
+#include <limits.h>
+
+#include "tsc.h"
+
 #ifndef TRACKER_H
 #define TRACKER_H
 

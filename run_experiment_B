@@ -1,0 +1,5 @@
+#!/bin/sh
+./test/run_experiment_A &
+cd test
+./run_experiment_A &
+cd ..
