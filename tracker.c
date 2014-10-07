@@ -9,8 +9,7 @@
 #include "tracker.h"
 #include "tsc.h"
 
-// TODO: write run_test_experiment_A bash file
-// TODO: do clock to ms
+// TODO: fix int when it should be u_int64_t
 // TOOD: Understand how proc/interupts matters
 
 /**
