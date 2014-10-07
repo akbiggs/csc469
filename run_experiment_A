@@ -1,4 +1,4 @@
 #!/bin/sh
-./a.out 10
+./tracker 10
 ./runplot.sh
 okular activeperiods.eps

@@ -7,25 +7,25 @@ set noytics
 set term postscript eps 10
 set size 0.45,0.35
 set output "activeperiods.eps"
-set object 1 rect from 0.000000, 1 to 2.603056, 2 fc rgb "blue" fs solid
-set object 2 rect from 2.603056, 1 to 2.608500, 2 fc rgb "red" fs solid
-set object 3 rect from 2.608500, 1 to 2.713578, 2 fc rgb "blue" fs solid
-set object 4 rect from 2.713578, 1 to 2.720646, 2 fc rgb "red" fs solid
-set object 5 rect from 2.720646, 1 to 3.541701, 2 fc rgb "blue" fs solid
-set object 6 rect from 3.541701, 1 to 3.548409, 2 fc rgb "red" fs solid
-set object 7 rect from 3.548409, 1 to 7.334851, 2 fc rgb "blue" fs solid
-set object 8 rect from 7.334851, 1 to 7.483495, 2 fc rgb "red" fs solid
-set object 9 rect from 7.483495, 1 to 9.418221, 2 fc rgb "blue" fs solid
-set object 10 rect from 9.418221, 1 to 9.421017, 2 fc rgb "red" fs solid
-set object 11 rect from 9.421017, 1 to 11.128135, 2 fc rgb "blue" fs solid
-set object 12 rect from 11.128135, 1 to 11.135014, 2 fc rgb "red" fs solid
-set object 13 rect from 11.135014, 1 to 13.149680, 2 fc rgb "blue" fs solid
-set object 14 rect from 13.149680, 1 to 13.152692, 2 fc rgb "red" fs solid
-set object 15 rect from 13.152692, 1 to 14.921424, 2 fc rgb "blue" fs solid
-set object 16 rect from 14.921424, 1 to 15.040742, 2 fc rgb "red" fs solid
-set object 17 rect from 15.040742, 1 to 18.008902, 2 fc rgb "blue" fs solid
-set object 18 rect from 18.008902, 1 to 18.014275, 2 fc rgb "red" fs solid
-set object 19 rect from 18.014275, 1 to 18.714828, 2 fc rgb "blue" fs solid
-set object 20 rect from 18.714828, 1 to 18.742907, 2 fc rgb "red" fs solid
-plot [0:18.742907] [0:3] 0
+set object 1 rect from 0.000000, 1 to 3.513222, 2 fc rgb "blue" fs solid noborder
+set object 2 rect from 3.513222, 1 to 3.516594, 2 fc rgb "red" fs solid noborder
+set object 3 rect from 3.516594, 1 to 7.050795, 2 fc rgb "blue" fs solid noborder
+set object 4 rect from 7.050795, 1 to 7.053007, 2 fc rgb "red" fs solid noborder
+set object 5 rect from 7.053007, 1 to 10.588362, 2 fc rgb "blue" fs solid noborder
+set object 6 rect from 10.588362, 1 to 10.593687, 2 fc rgb "red" fs solid noborder
+set object 7 rect from 10.593687, 1 to 14.125911, 2 fc rgb "blue" fs solid noborder
+set object 8 rect from 14.125911, 1 to 14.128172, 2 fc rgb "red" fs solid noborder
+set object 9 rect from 14.128172, 1 to 17.663469, 2 fc rgb "blue" fs solid noborder
+set object 10 rect from 17.663469, 1 to 17.665590, 2 fc rgb "red" fs solid noborder
+set object 11 rect from 17.665590, 1 to 21.201075, 2 fc rgb "blue" fs solid noborder
+set object 12 rect from 21.201075, 1 to 21.206993, 2 fc rgb "red" fs solid noborder
+set object 13 rect from 21.206993, 1 to 24.738604, 2 fc rgb "blue" fs solid noborder
+set object 14 rect from 24.738604, 1 to 24.740835, 2 fc rgb "red" fs solid noborder
+set object 15 rect from 24.740835, 1 to 28.276173, 2 fc rgb "blue" fs solid noborder
+set object 16 rect from 28.276173, 1 to 28.278275, 2 fc rgb "red" fs solid noborder
+set object 17 rect from 28.278275, 1 to 31.813808, 2 fc rgb "blue" fs solid noborder
+set object 18 rect from 31.813808, 1 to 31.818861, 2 fc rgb "red" fs solid noborder
+set object 19 rect from 31.818861, 1 to 35.351330, 2 fc rgb "blue" fs solid noborder
+set object 20 rect from 35.351330, 1 to 35.353561, 2 fc rgb "red" fs solid noborder
+plot [0.000046:35.353561] [0:3] 0
 ---EOF---
