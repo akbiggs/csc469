@@ -1,0 +1,4 @@
+#!/bin/sh
+./a.out 10
+./runplot.sh
+okular activeperiods.eps
