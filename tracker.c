@@ -117,17 +117,18 @@ int main(int argc, char** argv) {
     start_counter();
     u_int64_t start = inactive_periods(num_samples, threshold, samples);
 
+    u_int64_t elapsed = start;
     int i;
     for (i = 0; i < num_samples; i++) {
-       u_int64_t active_dur = samples[i*2] - start;
+       u_int64_t active_dur = samples[i*2] - elapsed;
        u_int64_t inactive_dur = samples[i*2+1] - samples[i*2];
 
        printf("Active %d: start at %" PRIu64 ", duration %" PRIu64 " cycles (%0.6f ms)\n",
-               i, start, active_dur, cycles_to_ms(active_dur));
+               i, elapsed, active_dur, cycles_to_ms(active_dur));
        printf("Inactive %d: start at %" PRIu64 ", duration %" PRIu64 " cycles (%0.6f ms)\n",
-               i, start + active_dur, inactive_dur, cycles_to_ms(inactive_dur));
+               i, elapsed + active_dur, inactive_dur, cycles_to_ms(inactive_dur));
 
-       start += active_dur + inactive_dur;
+       elapsed += active_dur + inactive_dur;
     }
 
     if (plot_samples("runplot.sh", samples, num_samples, cycles_to_ms(start))) {
@@ -171,14 +172,14 @@ int plot_samples(char* filename, u_int64_t* samples, int num_samples, float star
             
             cumulative_millis = cycles_to_ms(next_time);
 
-	    fprintf(plot_file, "set object %d rect from %f, 1 to %f, 2 fc rgb \"%s\" fs solid\n",
+	    fprintf(plot_file, "set object %d rect from %f, 1 to %f, 2 fc rgb \"%s\" fs solid noborder\n",
 		    i + 1, millis_elapsed, cumulative_millis, color);
 	    
 	    millis_elapsed = cumulative_millis;
         }
     }
 
-    fprintf(plot_file, "plot [0:%f] [0:3] 0\n", cumulative_millis);
+    fprintf(plot_file, "plot [%f:%f] [0:3] 0\n", start_ms, cumulative_millis);
     fputs("---EOF---\n", plot_file);
 
     fclose(plot_file);
