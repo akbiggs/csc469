@@ -105,12 +105,12 @@ float cycles_to_ms(u_int64_t cycles) {
 	// If we haven't calculated MHz, do it now.
 	if (MHz == -1) {
 		struct timespec sleep_time;
-		sleep_time.tv_nsec = 1L;
+		sleep_time.tv_nsec = 1000000;
 		sleep_time.tv_sec = 0;
 		
 		// Want to find the k best measures for the sleep cycles.
 		int i;
-		int k = 20;
+		int k = 25;
 		int k_best_iterations[k] ;
 		for (i = 0; i < k; i++) {
 			k_best_iterations[i] = INT_MAX;
@@ -120,7 +120,7 @@ float cycles_to_ms(u_int64_t cycles) {
 		measure_sleep_cycles(&sleep_time);
 		
 		// Run iterations to measure sleep cycles multiple times.
-		int iterations = 100;
+		int iterations = 200;
 		for (i = 0; i < iterations; i++) {
 			int count = measure_sleep_cycles(&sleep_time);
 			
@@ -146,11 +146,11 @@ float cycles_to_ms(u_int64_t cycles) {
 			sum += k_best_iterations[i];
 		}
 		
-		MHz = (sum / k) / 1000;
+		MHz = (sum / k) / 1e3;
 		printf("Found clock speed: %f MHz\n", MHz); 
 	}
 
-    return (float)(cycles / 100000.0f);
+    return (float)(cycles / MHz) / 1e3;
 }
 
 int measure_sleep_cycles(struct timespec *sleep_time) {
@@ -209,6 +209,7 @@ int find_threshold(int num) {
 	double desired_deviation = 0.005;
 	int desired_total = 25;
 	
+	// Examine the performance for the found thresholds and selects a threshold.
 	int found_threshold = -1;
 	double average = threshold_percents[0];
 	int total = 1;
