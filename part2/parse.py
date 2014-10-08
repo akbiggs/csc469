@@ -45,9 +45,34 @@ def get_average_fn_times(data, fn_index):
 
     return fn_times
 
+def average_attrs(cpu_datalist, attrs, num_fns):
+    averages = {}
+    for attr in attrs:
+        averages[attr] = []
+        for i in range(num_fns):
+            fn_attr_sum = sum(float(cpu_data[attr][i]) for cpu_data in cpu_datalist)
+            averages[attr].append(fn_attr_sum / len(cpu_datalist))
+    
+    return averages
+
+def print_table(avg_cpu_data, column_names, fn_names):
+    # print columns
+    for col in column_names:
+        print "%14s" % col,
+    print ""
+
+    attr_names = [name for name in column_names if name != "Function"]
+
+    for i,fn_name in enumerate(fn_names):
+        print "%14s" % fn_name,
+        for attr in attr_names:
+            print "%14f" % avg_cpu_data[attr][i],
+        print ""
+    
 if __name__ == "__main__":
     data = {}
     fn_names = []
+    column_names = []
     
     # Run the test on various CPUs connecting to node 0.
     for cpu in [i * 2 for i in range(0, 24)]:
@@ -57,15 +82,21 @@ if __name__ == "__main__":
         # Fill out the function names array if needed.
         if not len(fn_names):
             fn_names = data[cpu][0]['Function']
+            column_names = data[cpu][0].keys()
 
+    print(data)
     # For each function in the function names array, generate a data file.
     for i in range(0, 4):
         fn_name = fn_names[i]
         with open("data{0}.dat".format(fn_name.strip(":")), "w") as f:
-            i = 0
+            j = 0
             for cpu, avg_times in get_average_fn_times(data, i).iteritems():
                 avg = sum(avg_times) / len(avg_times)
-                f.write("{0} {1} {2}\n".format(i, cpu, avg))
-                i += 1
-        
+                f.write("{0} {1} {2}\n".format(j, cpu, avg))
+                j += 1
+    
+    attrs = [col for col in column_names if col != "Function"]
+    cpu_datalist = [datapoint for _,cpu_data in data.iteritems() for datapoint in cpu_data]
 
+    avgs = average_attrs(cpu_datalist, attrs, len(fn_names))
+    print_table(avgs, column_names, fn_names)
