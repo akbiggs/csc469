@@ -66,9 +66,7 @@ if __name__ == "__main__":
                 avg = sum(avg_times) / len(avg_times)
                 f.write("{0} {1} {2}\n".format(i, cpu, avg))
                 i += 1
-                
-    averaged_data = {}
-    for cpu, cpu_data
+        
 
 
 
