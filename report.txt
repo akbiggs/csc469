@@ -94,10 +94,11 @@ of its local memory.
 This being the case, if we access the local memory from the node that local
 memory is attached to, we expect that the time taken to perform in-memory
 operations will be significantly less compared to the time taken to perform
-operations on the same local memory from a node to whom that local memory
-does not belong. 
+operations on the same local memory from a CPU to whom that local memory does
+not belong.
 
-Briefly mention the structure of NUMA. Discuss the contents of "numactl --hardware" and discuss what we expect from the node differences.
+For this experiement, we are using the NUMA architecture on the CDF Wolf server.
+Each memory node has 12 CPUs attached to it.
 
 - Experiment: Discribe the methodology used to obtain the results. Maybe mention Stream settings. 
 Discuss how the data is processed and presented.
