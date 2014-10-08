@@ -9,6 +9,10 @@ Alexander Biggs
 998152920
 g1biggse
 
+TODO: Clean up the directory.
+TODO: Make sure the scripts run fine.
+TODO: Maybe code review maybe fuck it.
+
 
 Introduction
 ------------
@@ -19,15 +23,45 @@ This is a lovely introduction discussing the overall report structure, a brief e
 Part A: Benchmarking Tool
 -------------------------
 
-Describe what we are trying to measu
+Describe overall goal of investigating process activity, various parameters, and context switch performance.
 
-- Hardware: CPU family and speed, cache size, memory size, disk parameters, 
+- Hardware: CPU family and speed, cache size, memory size, disk parameters, and other factors contributing to the test.
 
 Part A.1: Tracking Process Activity
 -----------------------------------
 
+- Goal: Explain we want to track.
+
+- Experiement: Explain how we plan to track the inactive periods. Explain the algorithm for finding the clock cycle speed. Explain the algorithm for finding the threshold.
+
+- Results: Show the graphs for multiple runs. Maybe also show the found clock time and the found threshold how.
+
+- Discussion:
+  - What frequency are timer interrupts?
+  - How long does it take to handle an interrupt.
+  - Explain non-timer interrupts.
+  - Over the period of time, how much is lost to servicing interrupts?
+  - Maybe discuss the relationship with /proc/interrupts and /proc/cpuinfo
+  - Where are sources of error in the data?
+  
+- Appendix: Reference the various scripts and files. Briefly discuss their purpose and how to run them.
+
+
 Part A.2: Tracking Process Activity
 -----------------------------------
+
+- Goal: Explain that we want to find a way to measure the context switch time.
+
+- Experiment: Explain how we started two processes that esstenially run the same part as before. We pipe the results back and compare them to calculate a context time. Explain how we process the data.
+
+- Results: Show the plot of both threads at once. Show various best estimates for the context switch time when the number of iterations is changed.
+
+- Discussion:
+  - How long are time slices? (Before process switch?)
+  - Is the length of the time slice affected by number of processes running?
+  - Surprises? Compared to expectations.
+  - Sources of error in the data?
+
 
 Part B: Measuring NUMA Effects
 ------------------------------
@@ -51,6 +85,3 @@ Conclusion
 ----------
 
 A summary of the things we learned from the assignment and the results.
-
-
-
