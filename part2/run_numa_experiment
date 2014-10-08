@@ -4,4 +4,3 @@ sh create_chart.sh "Copy"
 sh create_chart.sh "Scale"
 sh create_chart.sh "Add"
 sh create_chart.sh "Triad"
-okular plotCopy
