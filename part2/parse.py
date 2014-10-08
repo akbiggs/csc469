@@ -1,4 +1,5 @@
 import os
+from collections import OrderedDict
 from subprocess import Popen, PIPE
 
 def read_results_lines(lines):
@@ -38,7 +39,7 @@ def run_stream_on(node_number, cpu_number):
     return parse_data(read_results_lines(output.split("\n")))
 
 def get_average_fn_times(data, fn_index):
-    fn_times = {}
+    fn_times = OrderedDict()
     for cpu,cpu_results in data.iteritems():
         fn_times[cpu] = [float(result['Avg time'][fn_index]) for result in cpu_results]
 
@@ -59,6 +60,4 @@ if __name__ == "__main__":
             for cpu,avg_times in get_average_fn_times(data, i).iteritems():
                 avg = sum(avg_times) / len(avg_times)
                 f.write("{0} {1}\n".format(cpu, avg))
-
-
 
