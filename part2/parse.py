@@ -29,25 +29,36 @@ def parse_data(results_lines):
         column_data[columns[i]] = [row[i] for row in parsed_rows]
 
     return column_data
-    
+
 def run_stream_on(node_number, cpu_number):
-	process = Popen(["numactl", "--membind", str(node_number), "--physcpubind",str(cpu_number), "/u/csc469h/fall/pub/bin/mccalpin-stream"], stdout = PIPE)
-	(output, err) = process.communicate()
-	exit_code = process.wait()
-	
-	return parse_data(read_results_lines(output.split("\n")))
+    process = Popen(["numactl", "--membind", str(node_number), "--physcpubind",str(cpu_number), "/u/csc469h/fall/pub/bin/mccalpin-stream"], stdout = PIPE)
+    (output, err) = process.communicate()
+    exit_code = process.wait()
+
+    return parse_data(read_results_lines(output.split("\n")))
 
 def get_average_fn_times(data, fn_index):
-	fn_times = {}
-	for cpu,cpu_results in data.iteritems():
-		fn_times[cpu] = [float(result['Avg time'][fn_index]) for result in cpu_results]
-	
-	return fn_times
+    fn_times = {}
+    for cpu,cpu_results in data.iteritems():
+        fn_times[cpu] = [float(result['Avg time'][fn_index]) for result in cpu_results]
+
+    return fn_times
 
 if __name__ == "__main__":
-	data = {}
-	for cpu in [i * 4 for i in range(0, 2)]:
-		data[cpu] = [run_stream_on(0, cpu) for i in range(0, 2)]
-		print(cpu)
-		
-	print(get_average_fn_times(data, 0))
+    data = {}
+    fn_names = []
+    for cpu in [i * 4 for i in range(0, 2)]:
+        data[cpu] = [run_stream_on(0, cpu) for i in range(0, 2)]
+        print(data)
+        if not len(fn_names):
+            fn_names = data[cpu][0]['Function']
+
+    for i in range(0, 4):
+        fn_name = fn_names[i]
+        with open("data{0}.dat".format(fn_name.strip(":")), "w") as f:
+            for cpu,avg_times in get_average_fn_times(data, i).iteritems():
+                avg = sum(avg_times) / len(avg_times)
+                f.write("{0} {1}\n".format(cpu, avg))
+
+
+
