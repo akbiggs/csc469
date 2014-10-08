@@ -9,6 +9,10 @@ Alexander Biggs
 998152920
 g1biggse
 
+TODO: Clean up the directory.
+TODO: Make sure the scripts run fine.
+TODO: Maybe code review maybe fuck it.
+
 
 Introduction
 ------------
@@ -16,18 +20,62 @@ Introduction
 This is a lovely introduction discussing the overall report structure, a brief explanation of 
 the three experiments, and a hint of the magic to come.
 
-Part A: Benchmarking Tool
+Part A: Benchmarking Tool DONE
 -------------------------
 
-Describe what we are trying to measu
+For this part of the assignment, our goal is to investigate the active time spent on a process and how interrupts and context switches affect that active time. We need to write a program that is able to distinguish when it has fallen inactive, and is able to accurately report the amount of time it is inactive. To do this, we will access the cycle counter on the CPU, and estimate parameters such as clock speed. With this information, we should be able to gain insight on process scheduling and the overhead of context switching.
 
-- Hardware: CPU family and speed, cache size, memory size, disk parameters, 
+- Hardware:
+
+For part A.1 and A.2 of the assignment, we will be running the code on CDF computers. The hardware of the computer will directly affect our test results. For shorter processor speeds, the scale of the process-activity time graph will grow. Cache misses will add noise to our experiment, so it will also be affected by cache speed and size.
+
+The CDF computers in BA2200 have these specifications:
+
+number of CPUs  : 2
+CPU model name  : Intel(R) Core(TM)2 Duo CPU     E6550  @ 2.33GHz
+CPU MHz         : 2333.000
+CPU cache size  : 4096 KB
+memory          : 2GB
+
+
 
 Part A.1: Tracking Process Activity
 -----------------------------------
 
+- Goal:
+
+We would like to plot a graph of a process over time showing when it active and inactive.
+
+- Experiement: Explain how we plan to track the inactive periods. Explain the algorithm for finding the clock cycle speed. Explain the algorithm for finding the threshold.
+
+- Results: Show the graphs for multiple runs. Maybe also show the found clock time and the found threshold how.
+
+- Discussion:
+  - What frequency are timer interrupts?
+  - How long does it take to handle an interrupt.
+  - Explain non-timer interrupts.
+  - Over the period of time, how much is lost to servicing interrupts?
+  - Maybe discuss the relationship with /proc/interrupts and /proc/cpuinfo
+  - Where are sources of error in the data?
+  
+- Appendix: Reference the various scripts and files. Briefly discuss their purpose and how to run them.
+
+
 Part A.2: Tracking Process Activity
 -----------------------------------
+
+- Goal: Explain that we want to find a way to measure the context switch time.
+
+- Experiment: Explain how we started two processes that esstenially run the same part as before. We pipe the results back and compare them to calculate a context time. Explain how we process the data.
+
+- Results: Show the plot of both threads at once. Show various best estimates for the context switch time when the number of iterations is changed.
+
+- Discussion:
+  - How long are time slices? (Before process switch?)
+  - Is the length of the time slice affected by number of processes running?
+  - Surprises? Compared to expectations.
+  - Sources of error in the data?
+
 
 Part B: Measuring NUMA Effects
 ------------------------------
@@ -81,6 +129,3 @@ Conclusion
 ----------
 
 A summary of the things we learned from the assignment and the results.
-
-
-
