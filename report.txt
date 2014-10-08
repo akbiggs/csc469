@@ -32,12 +32,10 @@ For part A.1 and A.2 of the assignment, we will be running the code on CDF compu
 The CDF computers in BA2200 have these specifications:
 
 number of CPUs  : 2
-CPU model name  : Intel(R) Core(TM)2 Duo CPU     E6550  @ 2.33GHz
+CPU model name  : Intel(R) Core(TM)2 Duo CPU 6550 @ 2.33GHz
 CPU MHz         : 2333.000
 CPU cache size  : 4096 KB
 memory          : 2GB
-
-
 
 Part A.1: Tracking Process Activity
 -----------------------------------
@@ -46,7 +44,28 @@ Part A.1: Tracking Process Activity
 
 We would like to plot a graph of a process over time showing when it active and inactive.
 
-- Experiement: Explain how we plan to track the inactive periods. Explain the algorithm for finding the clock cycle speed. Explain the algorithm for finding the threshold.
+- Experiement:
+
+To see if a process is active or not, we will run an infinite loop and measure how long it takes to run
+each iteration of the loop. We will measure the length of the iteration by the number of CPU clock cycles that have
+passed during it. If the process is active, each iteration should take a similar small number of cycles
+to complete. If the process becomes inactive during an iteration, then the recorded clock cycles should
+be much greater.
+
+We wrote a program which runs this infinite loop until it detects a certain number of inactive periods 
+(this number is an argument to the program). It detects an inactive period when the number iteration cycles
+is larger than a specific threshold. It then outputs the activity it found, and creates a graph of the
+process activity.
+
+The inactive process threshold is determined experimentally during the program. MORE
+
+The output of the program provides the activity of the process over milliseconds. To report this, we also
+need to experimentally determine the clock speed of the CPU. MORE
+
+
+Where
+
+Explain how we plan to track the inactive periods. Explain the algorithm for finding the clock cycle speed. Explain the algorithm for finding the threshold.
 
 - Results: Show the graphs for multiple runs. Maybe also show the found clock time and the found threshold how.
 
