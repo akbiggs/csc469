@@ -48,16 +48,26 @@ def get_average_fn_times(data, fn_index):
 if __name__ == "__main__":
     data = {}
     fn_names = []
-    for cpu in [i * 4 for i in range(0, 2)]:
+    
+    # Run the test on various CPUs connecting to node 0.
+    for cpu in [i * 4 for i in range(0, 12)]:
         data[cpu] = [run_stream_on(0, cpu) for i in range(0, 2)]
-        print(data)
+        print("Completed tests for CPU {0}".format(cpu))
+        
+        # Fill out the function names array if needed.
         if not len(fn_names):
             fn_names = data[cpu][0]['Function']
 
+    # For each function in the function names array, generate a data file.
     for i in range(0, 4):
         fn_name = fn_names[i]
         with open("data{0}.dat".format(fn_name.strip(":")), "w") as f:
-            for cpu,avg_times in get_average_fn_times(data, i).iteritems():
+            i = 0
+            for cpu, avg_times in get_average_fn_times(data, i).iteritems():
                 avg = sum(avg_times) / len(avg_times)
-                f.write("{0} {1}\n".format(cpu, avg))
+                f.write("{0} {1} {2}\n".format(i, cpu, avg))
+                i += 1
+                
+    averaged_data = {}
+    for cpu, cpu_data
 
