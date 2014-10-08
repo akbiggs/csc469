@@ -1,4 +1,4 @@
 #!/bin/sh
 ./tracker 10
-./runplot.sh
-okular activeperiods.eps
+sh ./tracker_plot.sh
+okular tracker.eps

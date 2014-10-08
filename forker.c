@@ -123,17 +123,12 @@ void run_parent(int num_samples, int* first_pipe, int* second_pipe) {
 	}
 	
 	printf("ESTIMATED CONTEXT SWITCH TIME IS %f MS\n", cycles_to_ms(sum_cs / num_cs));
-	plot_samples("both.sh", first_read_buffer, second_read_buffer, num_samples, cycles_to_ms(first_start), cycles_to_ms(second_start));
+	plot_samples("forker_plot.sh", first_read_buffer, second_read_buffer, num_samples, cycles_to_ms(first_start), cycles_to_ms(second_start));
 }
 
 void run_child(char* name, int num_samples, int* pipe, int threshold, u_int64_t* samples) {	
-	u_int64_t start = detect_context_switch_periods(num_samples, samples);
-	
-	int i;
-	printf("%s first start %" PRIu64 " !!!\n", name, start);
-	for (i = 0; i < num_samples * 2; i++) {
-		printf("%s sees %" PRIu64 " !!!\n", name, samples[i]);
-	}
+	u_int64_t start = inactive_periods(num_samples, threshold, samples);
+	//u_int64_t start = detect_context_switch_periods(num_samples, samples);
 	write(pipe[1], &start, sizeof(u_int64_t));
 	write(pipe[1], samples, sizeof(u_int64_t) * num_samples * 2);
 }
@@ -198,13 +193,14 @@ int plot_samples(char* filename, u_int64_t* first_samples, u_int64_t* second_sam
     fputs("set noytics\n", plot_file);
     fputs("set term postscript eps 10\n", plot_file);
     fputs("set size 0.45,0.35\n", plot_file);
-    fputs("set output \"activeperiods.eps\"\n", plot_file);
+    fputs("set output \"forker.eps\"\n", plot_file);
 
     float millis_elapsed = start_first;
     float cumulative_millis = start_first;
     
     if (num_samples != 0) {
         
+        // Plot the results from the first pipe.
         int i;
         for (i = 0; i < num_samples * 2; i++) {
 
@@ -222,6 +218,7 @@ int plot_samples(char* filename, u_int64_t* first_samples, u_int64_t* second_sam
 			millis_elapsed = cumulative_millis;
         }
         
+        // Plot the results from the second pipe.
         millis_elapsed = start_second;
 		cumulative_millis = start_second;
         for (i = 0; i < num_samples * 2; i++) {

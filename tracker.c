@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
        elapsed += active_dur + inactive_dur;
     }
 
-    if (plot_samples("runplot.sh", samples, num_samples, cycles_to_ms(start))) {
+    if (plot_samples("tracker_plot.sh", samples, num_samples, cycles_to_ms(start))) {
         fprintf(stderr, "Failed to write samples to a gnuplot file.\n");
     }
 
@@ -140,7 +140,7 @@ int plot_samples(char* filename, u_int64_t* samples, int num_samples, float star
     fputs("set noytics\n", plot_file);
     fputs("set term postscript eps 10\n", plot_file);
     fputs("set size 0.45,0.35\n", plot_file);
-    fputs("set output \"activeperiods.eps\"\n", plot_file);
+    fputs("set output \"tracker.eps\"\n", plot_file);
 
     float millis_elapsed = 0;
     float cumulative_millis = 0;

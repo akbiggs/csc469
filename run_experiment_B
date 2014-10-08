@@ -1,5 +1,4 @@
 #!/bin/sh
-./test/run_experiment_A &
-cd test
-./run_experiment_A &
-cd ..
+./forker 30
+sh ./forker_plot.sh
+okular forker.eps

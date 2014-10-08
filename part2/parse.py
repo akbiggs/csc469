@@ -1,3 +1,6 @@
+import os
+from subprocess import Popen, PIPE
+
 def read_results_lines(lines):
     results_lines = []
     reading = False
@@ -26,8 +29,25 @@ def parse_data(results_lines):
         column_data[columns[i]] = [row[i] for row in parsed_rows]
 
     return column_data
+    
+def run_stream_on(node_number, cpu_number):
+	process = Popen(["numactl", "--membind", str(node_number), "--physcpubind",str(cpu_number), "/u/csc469h/fall/pub/bin/mccalpin-stream"], stdout = PIPE)
+	(output, err) = process.communicate()
+	exit_code = process.wait()
+	
+	return parse_data(read_results_lines(output.split("\n")))
+
+def get_average_fn_times(data, fn_index):
+	fn_times = {}
+	for cpu,cpu_results in data.iteritems():
+		fn_times[cpu] = [float(result['Avg time'][fn_index]) for result in cpu_results]
+	
+	return fn_times
 
 if __name__ == "__main__":
-    with open("stream_out") as f:
-        data = parse_data(read_results_lines(f.readlines()))
-        print(data)
+	data = {}
+	for cpu in [i * 4 for i in range(0, 2)]:
+		data[cpu] = [run_stream_on(0, cpu) for i in range(0, 2)]
+		print(cpu)
+		
+	print(get_average_fn_times(data, 0))
