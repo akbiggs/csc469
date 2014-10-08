@@ -43,12 +43,28 @@ physical memory. Each NUMA node is able to access its own local memory faster
 than it is able to access memory in an interconnected node, due to the proximity
 of its local memory.
 
-
+This being the case, if we access the local memory from the node that local
+memory is attached to, we expect that the time taken to perform in-memory
+operations will be significantly less compared to the time taken to perform
+operations on the same local memory from a node to whom that local memory
+does not belong. 
 
 Briefly mention the structure of NUMA. Discuss the contents of "numactl --hardware" and discuss what we expect from the node differences.
 
 - Experiment: Discribe the methodology used to obtain the results. Maybe mention Stream settings. 
 Discuss how the data is processed and presented.
+
+To determine the validity of our hypothesis, we ran the stream benchmark using
+numactl many times, binding the benchmark to use the same local memory while
+changing the CPU. We do several runs for each CPU and average the results to try
+and accomodate for any variance from external factors influencing the
+performance of the benchmark. (TODO: What could those factors be?)
+
+With each run, we process the output from the stream benchmark using a Python
+script to extract the average time spent on each kernel. The average time was
+chosen for measurements due to its lack of sway from factors that might cause
+a run to perform significantly better or worse compared to other runs of the
+same benchmark.
 
 - Results: Show the data graphs. Show the tables. Report computations.
 
@@ -56,6 +72,8 @@ Discuss how the data is processed and presented.
   - Surprises?
   - Compare results to expected from "--hardware" and diagram.
   - Make note of patterns spotted.
+
+
 
 - Appendix: A reference about what scripts are associated with each experiment, the parameters for the script, and how to run them.
 
