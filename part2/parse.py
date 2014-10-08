@@ -50,8 +50,8 @@ if __name__ == "__main__":
     fn_names = []
     
     # Run the test on various CPUs connecting to node 0.
-    for cpu in [i * 4 for i in range(0, 12)]:
-        data[cpu] = [run_stream_on(0, cpu) for i in range(0, 2)]
+    for cpu in [i * 2 for i in range(0, 24)]:
+        data[cpu] = [run_stream_on(0, cpu) for i in range(0, 3)]
         print("Completed tests for CPU {0}".format(cpu))
         
         # Fill out the function names array if needed.

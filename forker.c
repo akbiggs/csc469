@@ -191,6 +191,9 @@ int plot_samples(char* filename, u_int64_t* first_samples, u_int64_t* second_sam
     fputs("set xlabel \"Time (ms)\"\n", plot_file);
     fputs("set nokey\n", plot_file);
     fputs("set noytics\n", plot_file);
+    fputs("set label \"Inactive\" at screen 0.2, screen 1 tc lt 1\n", plot_file);
+    fputs("set label \"Child 1 Active\" at screen 0.5, screen 0.5 left tc lt 3\n", plot_file);
+    fputs("set label \"Child 2 Active\" at screen -0.01, screen -0.01 left tc lt 2\n", plot_file);
     fputs("set term postscript eps 10\n", plot_file);
     fputs("set size 0.45,0.35\n", plot_file);
     fputs("set output \"forker.eps\"\n", plot_file);

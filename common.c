@@ -60,7 +60,7 @@ int wait_until_inactive_period(int threshold, u_int64_t* prev_counter, u_int64_t
  * that is long and varies little.
  */
 int find_threshold(int num) {
-	return 4000;
+
 	// Set the parameters for the threshold sampling.
 	int min_threshold = 50;
 	int max_threshold = 3000;

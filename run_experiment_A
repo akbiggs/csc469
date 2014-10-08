@@ -1,4 +1,5 @@
 #!/bin/sh
+make tracker
 ./tracker 10
 sh ./tracker_plot.sh
 okular tracker.eps

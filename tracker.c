@@ -137,6 +137,9 @@ int plot_samples(char* filename, u_int64_t* samples, int num_samples, float star
     fputs("set title \"Active and Inactive Periods\"\n", plot_file);
     fputs("set xlabel \"Time (ms)\"\n", plot_file);
     fputs("set nokey\n", plot_file);
+    fputs("set label \"Active Periods\" at screen 0.5,0.5\n", plot_file);
+    fputs("set label \"Inactive\" at 0.5,2.8 tc lt 1\n", plot_file);
+    fputs("set label \"Active\" at 0.5,2.5 tc lt 3\n", plot_file);
     fputs("set noytics\n", plot_file);
     fputs("set term postscript eps 10\n", plot_file);
     fputs("set size 0.45,0.35\n", plot_file);
@@ -160,7 +163,7 @@ int plot_samples(char* filename, u_int64_t* samples, int num_samples, float star
             
             cumulative_millis = cycles_to_ms(next_time);
 
-			fprintf(plot_file, "set object %d rect from %f, 1 to %f, 2 fc rgb \"%s\" fs solid noborder\n", i + 1, millis_elapsed, cumulative_millis, color);
+			fprintf(plot_file, "set object %d rect from %f, 1 to %f, 2 fc rgb \"%s\" fs solid\n", i + 1, millis_elapsed, cumulative_millis, color);
 			millis_elapsed = cumulative_millis;
         }
     }

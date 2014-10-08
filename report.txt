@@ -1,0 +1,56 @@
+CSC469 Assignment 1
+-------------------
+
+Adam Robinson-Yu
+998244341
+g2robint
+
+Alexander Biggs
+998152920
+g1biggse
+
+
+Introduction
+------------
+
+This is a lovely introduction discussing the overall report structure, a brief explanation of the three experiments, and a hint of the magic to comr.
+
+
+Part A: Benchmarking Tool
+-------------------------
+
+Describe what we are trying to measu
+
+- Hardware: CPU family and speed, cache size, memory size, disk parameters, 
+
+Part A.1: Tracking Process Activity
+-----------------------------------
+
+Part A.2: Tracking Process Activity
+-----------------------------------
+
+Part B: Measuring NUMA Effects
+------------------------------
+
+- Goal: We want to investigate the cost of accessing a memory node from various CPUs across the NUMA architecture.
+
+- Hardware: Briefly mention the structure of NUMA. Discuss the contents of "numactl --hardware" and discuss what we expect from the node differences.
+
+- Experiement: Discribe the methodology used to obtain the results. Maybe mention Stream settings. Discuss how the data is processed and presented.
+
+- Results: Show the data graphs. Show the tables. Report computations.
+
+- Discussion:
+  - Surprises?
+  - Compare results to expected from "--hardware" and diagram.
+  - Make note of patterns spotted.
+
+- Appendix: A reference about what scripts are associated with each experiment, the parameters for the script, and how to run them.
+
+Conclusion
+----------
+
+A summary of the things we learned from the assignment and the results.
+
+
+
