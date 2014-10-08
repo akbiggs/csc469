@@ -4,6 +4,8 @@
 #include <inttypes.h>
 #include <math.h>
 #include <stdlib.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
 #include "tsc.h"
 #include "common.h"
@@ -11,6 +13,7 @@
 
 
 int main(int argc, char** argv) {
+	
 	if (argc != 2) {
         fprintf(stderr, "Usage: %s <num_samples>\n", argv[0]);
         return -1;
@@ -84,33 +87,47 @@ void run_parent(int num_samples, int* first_pipe, int* second_pipe) {
 	u_int64_t combined_list[num_samples * 4];
 	int combined_list_owner[num_samples * 4];
 	int first_i = 0, second_i = 0, comb_i = 0;
-	for (comb_i = 0; comb_i < num_samples * 4; comb_i += 2) {
+	for (comb_i = 0; comb_i < num_samples * 4; comb_i += 1) {
 		if (second_i >= num_samples * 2 || (first_i < num_samples * 2 && first_read_buffer[first_i] < second_read_buffer[second_i])) {
 			combined_list[comb_i] = first_read_buffer[first_i];
-			combined_list[comb_i+1] = first_read_buffer[first_i+1];
-			first_i += 2;
-			combined_list_owner[comb_i] = 0;
-			combined_list_owner[comb_i+1] = 0;
+			combined_list_owner[comb_i] = 0 + first_i % 2;
+			first_i += 1;
 		} else {
 			combined_list[comb_i] = second_read_buffer[second_i];
-			combined_list[comb_i+1] = second_read_buffer[second_i+1];
-			second_i += 2;
-			combined_list_owner[comb_i] = 1;
-			combined_list_owner[comb_i+1] = 1;
+			combined_list_owner[comb_i] = 2 + second_i % 2;
+			second_i += 1;
 		}
 	}
 	
 	int i;
-	printf("owner: 0 - start active %" PRIu64 "\n", first_start);
-	printf("owner: 1 - start active %" PRIu64 "\n", second_start);
-	for (i = 0; i < num_samples * 4; i += 2) {
-		printf("owner: %d - start inactive %" PRIu64 "\n", combined_list_owner[i], combined_list[i]);
-		printf("owner: %d - end inactive   %" PRIu64 "\n", combined_list_owner[i+1], combined_list[i+1]);
+	printf("1 is active at %" PRIu64 "\n", first_start);
+	printf("2 is active at %" PRIu64 "\n", second_start);
+	int sum_cs = 0;
+	int num_cs = 0;
+	for (i = 0; i < num_samples * 4; i += 1) {
+		char* description;
+		switch (combined_list_owner[i]) {
+			case 0: description = "1 is inactive"; break;
+			case 1: description = "1 is active  "; break;
+			case 2: description = "2 is inactive"; break;
+			case 3: description = "2 is active  "; break;
+		}
+		printf("%s at %" PRIu64 "\n", description, combined_list[i]);
+		
+		if (i > 0) {
+			if ((combined_list_owner[i-1] == 0 && combined_list_owner[i] == 3) || (combined_list_owner[i-1] == 2 && combined_list_owner[i] == 1)) {
+				sum_cs = combined_list[i] - combined_list[i-1];
+				num_cs++;
+			}
+		}
 	}
+	
+	printf("ESTIMATED CONTEXT SWITCH TIME IS %f MS\n", cycles_to_ms(sum_cs / num_cs));
+	plot_samples("both.sh", first_read_buffer, second_read_buffer, num_samples, cycles_to_ms(first_start), cycles_to_ms(second_start));
 }
 
 void run_child(char* name, int num_samples, int* pipe, int threshold, u_int64_t* samples) {	
-	u_int64_t start = inactive_periods(num_samples, threshold, samples);
+	u_int64_t start = detect_context_switch_periods(num_samples, samples);
 	
 	int i;
 	printf("%s first start %" PRIu64 " !!!\n", name, start);
@@ -120,11 +137,54 @@ void run_child(char* name, int num_samples, int* pipe, int threshold, u_int64_t*
 	write(pipe[1], &start, sizeof(u_int64_t));
 	write(pipe[1], samples, sizeof(u_int64_t) * num_samples * 2);
 }
+    
+u_int64_t detect_context_switch_periods(int num, u_int64_t *samples) {
+	u_int64_t start_active = get_counter();
+
+    u_int64_t prev_counter = start_active;
+    u_int64_t cur_counter = start_active;
+    
+    int num_sampled = 0;
+    while (num_sampled < num) {
+		
+		detect_context_switch(&prev_counter, &cur_counter);
+
+        samples[num_sampled*2] = prev_counter;
+        samples[num_sampled*2 + 1] = cur_counter;
+
+        num_sampled++;
+
+        // make counters equal to avoid having the time taken spent printing
+        // out information, adding samples and incrementing being taken into
+        // account
+        prev_counter = get_counter();
+        cur_counter = prev_counter;
+    }
+
+    return start_active;
+}
+
+int detect_context_switch(u_int64_t* prev_counter, u_int64_t* cur_counter) {
+	struct rusage prev_r, cur_r;
+	getrusage(RUSAGE_SELF, &prev_r);
+	getrusage(RUSAGE_SELF, &cur_r);
+	
+	int count = 0;
+	while (cur_r.ru_nivcsw <= prev_r.ru_nivcsw) {
+		*prev_counter = *cur_counter;
+		*cur_counter = get_counter();
+		
+		prev_r = cur_r;
+		getrusage(RUSAGE_SELF, &cur_r);
+		count++;
+	}
+    return count;
+}
 
 /**
  * Produces a bash file that generates a graph for gnuplot.
  */ 
-int plot_samples(char* filename, u_int64_t* samples, int num_samples, float start_ms) {
+int plot_samples(char* filename, u_int64_t* first_samples, u_int64_t* second_samples, int num_samples, float start_first, float start_second) {
     FILE* plot_file = fopen(filename, "w");
     if (!plot_file) {
         return -1;
@@ -140,15 +200,15 @@ int plot_samples(char* filename, u_int64_t* samples, int num_samples, float star
     fputs("set size 0.45,0.35\n", plot_file);
     fputs("set output \"activeperiods.eps\"\n", plot_file);
 
-    float millis_elapsed = 0;
-    float cumulative_millis = 0;
+    float millis_elapsed = start_first;
+    float cumulative_millis = start_first;
     
     if (num_samples != 0) {
         
         int i;
-        for (i = 0; i < num_samples*2; i++) {
+        for (i = 0; i < num_samples * 2; i++) {
 
-            u_int64_t next_time = samples[i];
+            u_int64_t next_time = first_samples[i];
 			char* color;
             if (i % 2 == 0) {
                 color = "blue"; // active
@@ -158,12 +218,30 @@ int plot_samples(char* filename, u_int64_t* samples, int num_samples, float star
             
             cumulative_millis = cycles_to_ms(next_time);
 
-			fprintf(plot_file, "set object %d rect from %f, 1 to %f, 2 fc rgb \"%s\" fs solid noborder\n", i + 1, millis_elapsed, cumulative_millis, color);
+			fprintf(plot_file, "set object %d rect from %f, 2 to %f, 3 fc rgb \"%s\" fs solid noborder\n", i + 1, millis_elapsed, cumulative_millis, color);
+			millis_elapsed = cumulative_millis;
+        }
+        
+        millis_elapsed = start_second;
+		cumulative_millis = start_second;
+        for (i = 0; i < num_samples * 2; i++) {
+
+            u_int64_t next_time = second_samples[i];
+			char* color;
+            if (i % 2 == 0) {
+                color = "green"; // active
+            } else {
+				color = "red"; // inactive
+            }
+            
+            cumulative_millis = cycles_to_ms(next_time);
+
+			fprintf(plot_file, "set object %d rect from %f, 1 to %f, 2 fc rgb \"%s\" fs solid noborder\n", num_samples * 2 + i + 1, millis_elapsed, cumulative_millis, color);
 			millis_elapsed = cumulative_millis;
         }
     }
 
-    fprintf(plot_file, "plot [%f:%f] [0:3] 0\n", start_ms, cumulative_millis);
+    fprintf(plot_file, "plot [%f:%f] [0:4] 0\n", start_first, cumulative_millis);
     fputs("---EOF---\n", plot_file);
 
     fclose(plot_file);
