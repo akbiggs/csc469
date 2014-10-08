@@ -13,8 +13,8 @@ g1biggse
 Introduction
 ------------
 
-This is a lovely introduction discussing the overall report structure, a brief explanation of the three experiments, and a hint of the magic to comr.
-
+This is a lovely introduction discussing the overall report structure, a brief explanation of 
+the three experiments, and a hint of the magic to come.
 
 Part A: Benchmarking Tool
 -------------------------
@@ -32,11 +32,23 @@ Part A.2: Tracking Process Activity
 Part B: Measuring NUMA Effects
 ------------------------------
 
-- Goal: We want to investigate the cost of accessing a memory node from various CPUs across the NUMA architecture.
+- Goal: We want to investigate the cost of accessing a memory node from various CPUs across the
+NUMA architecture.
 
-- Hardware: Briefly mention the structure of NUMA. Discuss the contents of "numactl --hardware" and discuss what we expect from the node differences.
+- Hardware:
 
-- Experiement: Discribe the methodology used to obtain the results. Maybe mention Stream settings. Discuss how the data is processed and presented.
+In Non-Uniform Memory Access architecture, each set of cores has its own local
+memory node. Each of these nodes are interconnected to form a single shared
+physical memory. Each NUMA node is able to access its own local memory faster
+than it is able to access memory in an interconnected node, due to the proximity
+of its local memory.
+
+
+
+Briefly mention the structure of NUMA. Discuss the contents of "numactl --hardware" and discuss what we expect from the node differences.
+
+- Experiment: Discribe the methodology used to obtain the results. Maybe mention Stream settings. 
+Discuss how the data is processed and presented.
 
 - Results: Show the data graphs. Show the tables. Report computations.
 
