@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -6,12 +7,18 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <sched.h>
+#include <limits.h>
 
 #include "tsc.h"
 #include "common.h"
 #include "forker.h"
 
-
+/**
+ * We want to measure the context switch time between two processes.
+ * We fork two children and set up pipes to read back data from them.
+ * The children each run "run_child" and the parent runs "run_parent".
+ */ 
 int main(int argc, char** argv) {
 	
 	if (argc != 2) {
@@ -71,6 +78,13 @@ int main(int argc, char** argv) {
     return 0;
 }
 
+/**
+ * Reads information back from its children, then combines their events
+ * into a single list.
+ * 
+ * It then computes the average context switch time and outputs an
+ * activity graph.
+ */
 void run_parent(int num_samples, int* first_pipe, int* second_pipe) {
 	
 	u_int64_t first_read_buffer[num_samples * 2];
@@ -83,9 +97,14 @@ void run_parent(int num_samples, int* first_pipe, int* second_pipe) {
 	read(second_pipe[0], &second_start, sizeof(u_int64_t));
 	read(second_pipe[0], second_read_buffer, sizeof(u_int64_t) * num_samples * 2);
 	
+
 	// Combine the two sorted lists into one sorted list.
-	u_int64_t combined_list[num_samples * 4];
+	u_int64_t combined_list[num_samples * 4];	
+	
+	// This array stores a value representing which process
+	// the event is associated with and if it went inactive or active.
 	int combined_list_owner[num_samples * 4];
+	
 	int first_i = 0, second_i = 0, comb_i = 0;
 	for (comb_i = 0; comb_i < num_samples * 4; comb_i += 1) {
 		if (second_i >= num_samples * 2 || (first_i < num_samples * 2 && first_read_buffer[first_i] < second_read_buffer[second_i])) {
@@ -100,11 +119,23 @@ void run_parent(int num_samples, int* first_pipe, int* second_pipe) {
 	}
 	
 	int i;
-	printf("1 is active at %" PRIu64 "\n", first_start);
-	printf("2 is active at %" PRIu64 "\n", second_start);
+	printf("1 is active at   %" PRIu64 "\n", first_start);
+	printf("2 is active at   %" PRIu64 "\n", second_start);
+	
 	int sum_cs = 0;
 	int num_cs = 0;
+	
+	// Want to find the k best measures for context switch time.
+	int k = num_samples / 5;
+	int k_best_cs[k] ;
+	for (i = 0; i < k; i++) {
+		k_best_cs[i] = INT_MAX;
+	}
+	
+	// Iterate through all the elements in the sorted list.
 	for (i = 0; i < num_samples * 4; i += 1) {
+		
+		// Display the events that occured.
 		char* description;
 		switch (combined_list_owner[i]) {
 			case 0: description = "1 is inactive"; break;
@@ -114,66 +145,58 @@ void run_parent(int num_samples, int* first_pipe, int* second_pipe) {
 		}
 		printf("%s at %" PRIu64 "\n", description, combined_list[i]);
 		
+		// If a context switch is detected, add it to the running sum.
 		if (i > 0) {
 			if ((combined_list_owner[i-1] == 0 && combined_list_owner[i] == 3) || (combined_list_owner[i-1] == 2 && combined_list_owner[i] == 1)) {
-				sum_cs = combined_list[i] - combined_list[i-1];
+				int cs_time = combined_list[i] - combined_list[i-1];
+				sum_cs += cs_time;
 				num_cs++;
+				
+				// Check our current k best, to see if this is better.
+				int j;
+				for (j = 0; j < k; j++) {
+					if (cs_time < k_best_cs[j]) {
+						
+						// A better value was found, shift array and replace.
+						int h;
+						for (h = k-2; h >= j; h--) {
+							k_best_cs[h+1] = k_best_cs[h];
+						}
+						k_best_cs[j] = cs_time;
+						break;
+					} 
+				}
 			}
 		}
 	}
 	
-	printf("ESTIMATED CONTEXT SWITCH TIME IS %f MS\n", cycles_to_ms(sum_cs / num_cs));
+	int k_total = k < num_cs ? k : num_cs;
+	int k_sum = 0;
+	for (i = 0; i < k_total; i++) {
+		k_sum += k_best_cs[i];
+		printf("%d best context switch time is %d cycles\n", i, k_best_cs[i]);
+	}
+	printf("k-best average CONTEXT SWITCH TIME is %f ms\n", cycles_to_ms(k_sum / k_total));
+	printf("Average CONTEXT SWITCH TIME is %f ms\n", cycles_to_ms(sum_cs / num_cs));
 	plot_samples("forker_plot.sh", first_read_buffer, second_read_buffer, num_samples, cycles_to_ms(first_start), cycles_to_ms(second_start));
 }
 
+/**
+ * Ensures that children run on the same CPU and then runs "inactive_periods"
+ * and pipes the result back to the parent.
+ */
 void run_child(char* name, int num_samples, int* pipe, int threshold, u_int64_t* samples) {	
+	cpu_set_t set;
+    CPU_ZERO(&set);
+    CPU_SET(0, &set);
+    if (sched_setaffinity(0, sizeof(cpu_set_t), &set ) == -1) {
+		printf("WARNING: Was unable to set CPU affinity.");
+	}
+	
 	u_int64_t start = inactive_periods(num_samples, threshold, samples);
 	//u_int64_t start = detect_context_switch_periods(num_samples, samples);
 	write(pipe[1], &start, sizeof(u_int64_t));
 	write(pipe[1], samples, sizeof(u_int64_t) * num_samples * 2);
-}
-    
-u_int64_t detect_context_switch_periods(int num, u_int64_t *samples) {
-	u_int64_t start_active = get_counter();
-
-    u_int64_t prev_counter = start_active;
-    u_int64_t cur_counter = start_active;
-    
-    int num_sampled = 0;
-    while (num_sampled < num) {
-		
-		detect_context_switch(&prev_counter, &cur_counter);
-
-        samples[num_sampled*2] = prev_counter;
-        samples[num_sampled*2 + 1] = cur_counter;
-
-        num_sampled++;
-
-        // make counters equal to avoid having the time taken spent printing
-        // out information, adding samples and incrementing being taken into
-        // account
-        prev_counter = get_counter();
-        cur_counter = prev_counter;
-    }
-
-    return start_active;
-}
-
-int detect_context_switch(u_int64_t* prev_counter, u_int64_t* cur_counter) {
-	struct rusage prev_r, cur_r;
-	getrusage(RUSAGE_SELF, &prev_r);
-	getrusage(RUSAGE_SELF, &cur_r);
-	
-	int count = 0;
-	while (cur_r.ru_nivcsw <= prev_r.ru_nivcsw) {
-		*prev_counter = *cur_counter;
-		*cur_counter = get_counter();
-		
-		prev_r = cur_r;
-		getrusage(RUSAGE_SELF, &cur_r);
-		count++;
-	}
-    return count;
 }
 
 /**

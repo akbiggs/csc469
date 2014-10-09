@@ -41,7 +41,7 @@ def run_stream_on(node_number, cpu_number):
 def get_average_fn_times(data, fn_index):
     fn_times = OrderedDict()
     for cpu,cpu_results in data.iteritems():
-        fn_times[cpu] = [float(result['Avg time'][fn_index]) for result in cpu_results]
+        fn_times[cpu] = [float(result['Min time'][fn_index]) for result in cpu_results]
 
     return fn_times
 
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     column_names = []
     
     # Run the test on various CPUs connecting to node 0.
-    for cpu in [i * 2 for i in range(0, 24)]:
+    for cpu in [i for i in range(0, 48)]:
         data[cpu] = [run_stream_on(0, cpu) for i in range(0, 3)]
         print("Completed tests for CPU {0}".format(cpu))
         

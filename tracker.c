@@ -9,9 +9,6 @@
 #include "common.h"
 #include "tsc.h"
 
-// TODO: fix int when it should be u_int64_t
-// TOOD: Understand how proc/interupts matters
-
 /**
  * Runs the experiment and outputs gnuplot input to be graphed.
  */
@@ -23,8 +20,6 @@ int main(int argc, char** argv) {
 
     int num_samples = atoi(argv[1]);
     u_int64_t samples[num_samples*2];
-    
-    test_cache_miss_time();
     int threshold = find_threshold(5);
 
     start_counter();
@@ -50,77 +45,6 @@ int main(int argc, char** argv) {
     }
 
     return 0;
-}
-
-/**
- * Tests cache miss time by comparing array gets and sets when accessing the
- * same element repeatidly versus accessing random elements.
- */
-void test_cache_miss_time() {
-	srand(time(NULL));
-	int i, j;
-	int array_size = 100;
-	int** array = (int **)malloc(sizeof(int *)*array_size);
-	for(i = 0; i < array_size; i++) {
-	  array[i] = (int *)malloc(sizeof(int)*array_size);
-	}
-	int averaging_iterations = 10100100;
-	printf("=== TESTING CACHE MISS TIME ===\nArray of size %d * %d averaging over %d iterations.\n", array_size, array_size, averaging_iterations);
-	
-	int zero = 0;
-	zero += 1;
-	zero -= 1;
-	u_int64_t prev_counter, cur_counter;
-	
-	// Warm up the cache...
-	int sum = 0;
-	for (i = 0; i < array_size; i++) {
-		for (j = 0; j < array_size; j++) {
-			sum += array[i][j];
-		}
-	}
-	
-	// Test the time to get and set the same element over and over.
-	prev_counter = get_counter();
-	increment_array(array, averaging_iterations, 1);
-	cur_counter = get_counter();
-	int average_repeat = (cur_counter - prev_counter) / averaging_iterations;
-	printf("Repeated Access -- %d cycles on average\n", average_repeat);
-
-	// Test the time to get and set random elements over and over.
-	prev_counter = get_counter();
-	increment_array(array, averaging_iterations, array_size);
-	cur_counter = get_counter();
-	int average_random = (cur_counter - prev_counter) / averaging_iterations;
-	printf("Random Access -- %d cycles on average\n", average_random);
-
-	// Add up the values so the compiler knows we need them.
-	sum = 0;
-	for (i = 0; i < array_size; i++) {
-		for (j = 0; j < array_size; j++) {
-			sum += array[i][j];
-		}
-	}
-	for(i = 0; i < array_size; i++) {
-	  free(array[i]);
-	}
-	free(array);
-	
-	printf("Sum of array -- %d\n", sum);
-	printf("Cache miss time is roughly -- %d\n", average_random - average_repeat);
-}
-
-/**
- * Randomly increments a element in the array.
- * Used to help test cache performance.
- */
-void increment_array(int** array, int increments, int max_array_index_select) {
-	int i;
-	for (i = 0; i < increments; i++) {
-		int posx = rand() % max_array_index_select;
-		int posy = rand() % max_array_index_select;
-		array[posx][posy] += 1;
-	}
 }
 
 /**

@@ -11,16 +11,16 @@ g1biggse
 
 TODO: Clean up the directory.
 TODO: Make sure the scripts run fine.
-TODO: Maybe code review maybe fuck it.
+TODO: Maybe code review to clean up comments maybe fuck it.
 
 
-Introduction
+Introduction WRITE ME PLZ
 ------------
 
 This is a lovely introduction discussing the overall report structure, a brief explanation of 
 the three experiments, and a hint of the magic to come.
 
-Part A: Benchmarking Tool DONE
+Part A: Benchmarking Tool
 -------------------------
 
 For this part of the assignment, our goal is to investigate the active time spent on a process and how interrupts and context switches affect that active time. We need to write a program that is able to distinguish when it has fallen inactive, and is able to accurately report the amount of time it is inactive. To do this, we will access the cycle counter on the CPU, and estimate parameters such as clock speed. With this information, we should be able to gain insight on process scheduling and the overhead of context switching.
@@ -33,7 +33,7 @@ The CDF computers in BA2200 have these specifications:
 
 number of CPUs  : 2
 CPU model name  : Intel(R) Core(TM)2 Duo CPU 6550 @ 2.33GHz
-CPU MHz         : 2333.000
+CPU MHz         : 2333.000 Mhz
 CPU cache size  : 4096 KB
 memory          : 2GB
 
@@ -57,46 +57,138 @@ We wrote a program which runs this infinite loop until it detects a certain numb
 is larger than a specific threshold. It then outputs the activity it found, and creates a graph of the
 process activity.
 
-The inactive process threshold is determined experimentally during the program. MORE
+The inactive process threshold is determined experimentally during the program. The threshold value needs to be high enough to not catch the regular iteration amount and caches misses, but small enough to catch interrupts.
+Since interupts require saving program state, loading and running instructions, then restoring program state, it will be much more expensive than regular iterations or cache misses.
+
+To experimentally determine this threshold, we sample a range of many possible threshold values to get a rate of how many periods they label as inactive. When we have a tiny threshold, we should report all periods as inactive. As the threshold increases, we should see a sudden drop off when it stops catching small iterations, but is still catching cache misses. As it continues to increase, it will eventually be large enough to only catch interrupts. Since there is a large difference between the cache misses threshold and interrupts threshold, we should be able to detect this region on the graph.
+
+Our current implentation graphs thresholds by their inactive period classification rate. It checks from 50 to 3000, then selects a region where the classficiation rate is low and stable. Then it averages the region's threshold values to select the threshold.
 
 The output of the program provides the activity of the process over milliseconds. To report this, we also
-need to experimentally determine the clock speed of the CPU. MORE
+need to experimentally determine the clock speed of the CPU. This is achieved by sleeping for a set amount of time (we chose 1ms) then recording the number of cycles that passed during that time. This is susceptible to errors and interrupts, so to compensate for this, we run the test for 200 iterations, then take the 25 best results and average them.
 
+- Results:
 
-Where
+We ran the test a number of times, here are some of the plots below.
 
-Explain how we plan to track the inactive periods. Explain the algorithm for finding the clock cycle speed. Explain the algorithm for finding the threshold.
+Figure 1: Running the test for 10 inactive periods
 
-- Results: Show the graphs for multiple runs. Maybe also show the found clock time and the found threshold how.
+<q2_1a>
+
+Figure 2: Running the test for 100 inactive periods
+
+<q2_1b>
+
+Figure 3: Running the test for 100 inactive periods with a heavy CPU load
+
+<q2_1c>
+
+To see the test running under a heavy CPU load, we ran the program multiples times concurrently while dragging GUI windows around the screen.
+
+The threshold time our experiement usually picks is around 590.
+During the programming phase, we printed out the values for all the threshold samples.
+From these results, we usually saw 100% of iterations being classified as inactive until the threshold reached 84 cycles. Between 84 and 125, we would see a decline in classified iterations until they remain fairly constant and low.
+
+The clock speed our program identifies is close to 2450.00 MHz each time.
 
 - Discussion:
+
+Our expeirment seems to yeild resonable results. "Figure 1" and "Figure 2" show the program running
+different lengths, and the timer interrupt speed seems fairly constant. From the heavy load graph, it
+can be seen that the interrupts from other programs interfere with this pattern. There could be some 
+inaccuracy on the reported cycles (included in the Appendix), due a single regular iteration cycle being
+included with the reported inactive cycles.
+
   - What frequency are timer interrupts?
-  - How long does it take to handle an interrupt.
-  - Explain non-timer interrupts.
-  - Over the period of time, how much is lost to servicing interrupts?
-  - Maybe discuss the relationship with /proc/interrupts and /proc/cpuinfo
-  - Where are sources of error in the data?
+  From "Figure 1", it would appear that the short timer interrupts occur roughly every 4ms.
+  After running the experiment multiple times, this seems to be the consistent time for this computer.
+  Reading "Table 1" in the appendix, you will see the more accurate estimation of 3.7ms.
   
-- Appendix: Reference the various scripts and files. Briefly discuss their purpose and how to run them.
+  - How long does it take to handle an interrupt.
+  As you can see from "Table 1," it would appear that interrupts are handled at varying times (possibly
+  due to error), which range from 0.001ms to 0.02ms. Avering the iterrupt times from "Table 1", we get 
+  0.05912ms.
+  
+  - Explain non-timer interrupts.
+  As you can see from "Figure 3", when we run numerous processes at once with the benchmark, our results   
+  are far from regular. These other interrupts can be caused from switching to other processes, or handling
+  input from the mouse and output from other programs. 
+  
+  - Over the period of time, how much is lost to servicing interrupts?
+  Compared to the time spent on running the actual program, it is very small. If the program runs for 3.7ms
+  on average, and the time for an interrupt is 0.05912ms, then interrupts take roughly 0.05912 / (3.7 + 
+  0.05912) = 0.015 = 1.5% of the time.
+  
+- Scripts:
+
+To run this experiment, open the project folder and call "sh run_experiment_A". This will:
+1. Run the Makefile.
+2. Run the compiled program "tracker" with the argument of 100 inactive periods.
+3. Run the "forker_plot.sh" script 
+4. Run Okular to open a GUI window and show the plot. 
+
+The program "tracker", executes the the algorithm described above and outputs the results. It also creates a script which is used to generate a gnuplot graph.
+
+The main program is run from "tracker.c", while "common.c" holds the functions that are shared between
+part A.1 and part A.2, such as "inactive_periods", "measure_sleep_cycles" and "find_threshold".
 
 
-Part A.2: Tracking Process Activity
+Part A.2: Tracking Process Activity TODO
 -----------------------------------
 
-- Goal: Explain that we want to find a way to measure the context switch time.
+- Goal:WRITE ME PLZ
 
-- Experiment: Explain how we started two processes that esstenially run the same part as before. We pipe the results back and compare them to calculate a context time. Explain how we process the data.
+We would like to find the context switch time between two processes.
 
-- Results: Show the plot of both threads at once. Show various best estimates for the context switch time when the number of iterations is changed.
+- Experiment:
+
+To find this context switch time, we will fork two processes. Each process will run code similar to
+part A.1 to track active and inactive times. After both children have completed, they will pipe their
+results back the parent, who will then combine their data for visualization and processing.
+
+During processing, we will track when one process goes inactive and other goes active immediately afterward. It will track the cycles between these times and report that as the context switch time. The final reported context time will be the average of the k-best times. We select k as one fifth of the number of inactive cycles.
+
+To ensure both the processes are counting from the same start point, we start the CPU counter before any process is forked. We also put a restriction on the children using "sched_setaffinity" to ensure both the processes run on the same CPU.
+
+At the end of the experiement, we also output a graph showing the activity of both of the processes running concurrently.
+
+- Results:
+
+Figure 4: Running the test for 10 inactive periods
+
+<q2_2_10>
+
+k-best Average Context Switch Time:  0.002981 ms
+Average Context Switch Time:         0.012299 ms
+
+Figure 5: Running the test for 50 inactive periods
+
+<q2_2_50>
+
+k-best Average Context Switch Time: 0.005135 ms
+Average Context Switch Time:        0.567509 ms
+
+Figure 6: Running the test for 1000 inactive periods
+
+<q2_2_1000>
+
+k-best Average Context Switch Time: 0.003734 ms
+Average Context Switch Time:        0.016241 ms
 
 - Discussion:
-  - How long are time slices? (Before process switch?)
+
+  From our method, 
+
+  - How long do processes get to run?
+  
   - Is the length of the time slice affected by number of processes running?
   - Surprises? Compared to expectations.
   - Sources of error in the data?
+  
+- Scripts
 
 
-Part B: Measuring NUMA Effects
+Part B: Measuring NUMA Effects 
 ------------------------------
 
 - Goal: We want to investigate the cost of accessing a memory node from various CPUs across the
@@ -141,11 +233,239 @@ same benchmark.
   - Compare results to expected from "--hardware" and diagram.
   - Make note of patterns spotted.
 
+- Script: A reference about what scripts are associated with each experiment, the parameters for the script, and how to run them.
 
-
-- Appendix: A reference about what scripts are associated with each experiment, the parameters for the script, and how to run them.
-
-Conclusion
+Conclusion WRITE ME PLZ
 ----------
 
 A summary of the things we learned from the assignment and the results.
+
+Appendix
+--------
+
+Table 1: Exact runtimes for Figure 1.
+
+Active 0:   start at 448,      duration 9240784 cycles  (3.767105 ms)
+Inactive 0: start at 9241232,  duration 17864 cycles    (0.007282 ms)
+Active 1:   start at 9259096,  duration 9291807 cycles  (3.787905 ms)
+Inactive 1: start at 18550903, duration 6321 cycles     (0.002577 ms)
+Active 2:   start at 18557224, duration 9303441 cycles  (3.792648 ms)
+Inactive 2: start at 27860665, duration 5943 cycles     (0.002423 ms)
+Active 3:   start at 27866608, duration 9303770 cycles  (3.792782 ms)
+Inactive 3: start at 37170378, duration 14210 cycles    (0.005793 ms)
+Active 4:   start at 37184588, duration 9295531 cycles  (3.789423 ms)
+Inactive 4: start at 46480119, duration 8834 cycles     (0.003601 ms)
+Active 5:   start at 46488953, duration 9300893 cycles  (3.791609 ms)
+Inactive 5: start at 55789846, duration 4844 cycles     (0.001975 ms)
+Active 6:   start at 55794690, duration 9304855 cycles  (3.793224 ms)
+Inactive 6: start at 65099545, duration 11872 cycles    (0.004840 ms)
+Active 7:   start at 65111417, duration 38297 cycles    (0.015612 ms)
+Inactive 7: start at 65149714, duration 58324 cycles    (0.023776 ms)
+Active 8:   start at 65208038, duration 9201227 cycles  (3.750979 ms)
+Inactive 8: start at 74409265, duration 12201 cycles    (0.004974 ms)
+Active 9:   start at 74421466, duration 9297547 cycles  (3.790245 ms)
+Inactive 9: start at 83719013, duration 4613 cycles     (0.001881 ms)
+
+Table 2: Best context switch times for Figure 6
+
+0 best context switch time is 6545 cycles
+1 best context switch time is 6657 cycles
+2 best context switch time is 6727 cycles
+3 best context switch time is 6769 cycles
+4 best context switch time is 6783 cycles
+5 best context switch time is 6804 cycles
+6 best context switch time is 6825 cycles
+7 best context switch time is 6846 cycles
+8 best context switch time is 6853 cycles
+9 best context switch time is 6888 cycles
+10 best context switch time is 6902 cycles
+11 best context switch time is 6909 cycles
+12 best context switch time is 6916 cycles
+13 best context switch time is 6937 cycles
+14 best context switch time is 6937 cycles
+15 best context switch time is 6944 cycles
+16 best context switch time is 6951 cycles
+17 best context switch time is 6951 cycles
+18 best context switch time is 6958 cycles
+19 best context switch time is 6958 cycles
+20 best context switch time is 6958 cycles
+21 best context switch time is 6965 cycles
+22 best context switch time is 6972 cycles
+23 best context switch time is 6979 cycles
+24 best context switch time is 6993 cycles
+25 best context switch time is 6993 cycles
+26 best context switch time is 6993 cycles
+27 best context switch time is 7021 cycles
+28 best context switch time is 7049 cycles
+29 best context switch time is 7056 cycles
+30 best context switch time is 7056 cycles
+31 best context switch time is 7056 cycles
+32 best context switch time is 7056 cycles
+33 best context switch time is 7056 cycles
+34 best context switch time is 7056 cycles
+35 best context switch time is 7070 cycles
+36 best context switch time is 7070 cycles
+37 best context switch time is 7070 cycles
+38 best context switch time is 7077 cycles
+39 best context switch time is 7077 cycles
+40 best context switch time is 7084 cycles
+41 best context switch time is 7098 cycles
+42 best context switch time is 7098 cycles
+43 best context switch time is 7112 cycles
+44 best context switch time is 7119 cycles
+45 best context switch time is 7119 cycles
+46 best context switch time is 7126 cycles
+47 best context switch time is 7126 cycles
+48 best context switch time is 7133 cycles
+49 best context switch time is 7133 cycles
+50 best context switch time is 7140 cycles
+51 best context switch time is 7140 cycles
+52 best context switch time is 7140 cycles
+53 best context switch time is 7140 cycles
+54 best context switch time is 7140 cycles
+55 best context switch time is 7140 cycles
+56 best context switch time is 7147 cycles
+57 best context switch time is 7147 cycles
+58 best context switch time is 7154 cycles
+59 best context switch time is 7154 cycles
+60 best context switch time is 7161 cycles
+61 best context switch time is 7161 cycles
+62 best context switch time is 7168 cycles
+63 best context switch time is 7168 cycles
+64 best context switch time is 7168 cycles
+65 best context switch time is 7175 cycles
+66 best context switch time is 7175 cycles
+67 best context switch time is 7175 cycles
+68 best context switch time is 7182 cycles
+69 best context switch time is 7182 cycles
+70 best context switch time is 7189 cycles
+71 best context switch time is 7196 cycles
+72 best context switch time is 7203 cycles
+73 best context switch time is 7203 cycles
+74 best context switch time is 7217 cycles
+75 best context switch time is 7224 cycles
+76 best context switch time is 7224 cycles
+77 best context switch time is 7224 cycles
+78 best context switch time is 7231 cycles
+79 best context switch time is 7231 cycles
+80 best context switch time is 7231 cycles
+81 best context switch time is 7231 cycles
+82 best context switch time is 7238 cycles
+83 best context switch time is 7245 cycles
+84 best context switch time is 7245 cycles
+85 best context switch time is 7245 cycles
+86 best context switch time is 7266 cycles
+87 best context switch time is 7266 cycles
+88 best context switch time is 7273 cycles
+89 best context switch time is 7301 cycles
+90 best context switch time is 7308 cycles
+91 best context switch time is 7315 cycles
+92 best context switch time is 7322 cycles
+93 best context switch time is 7322 cycles
+94 best context switch time is 7329 cycles
+95 best context switch time is 7364 cycles
+96 best context switch time is 7371 cycles
+97 best context switch time is 7371 cycles
+98 best context switch time is 7371 cycles
+99 best context switch time is 7378 cycles
+100 best context switch time is 7385 cycles
+101 best context switch time is 7385 cycles
+102 best context switch time is 7385 cycles
+103 best context switch time is 7420 cycles
+104 best context switch time is 7441 cycles
+105 best context switch time is 7448 cycles
+106 best context switch time is 7462 cycles
+107 best context switch time is 7483 cycles
+108 best context switch time is 7525 cycles
+109 best context switch time is 7532 cycles
+110 best context switch time is 7539 cycles
+111 best context switch time is 7567 cycles
+112 best context switch time is 7567 cycles
+113 best context switch time is 7574 cycles
+114 best context switch time is 7581 cycles
+115 best context switch time is 7588 cycles
+116 best context switch time is 7588 cycles
+117 best context switch time is 7637 cycles
+118 best context switch time is 7693 cycles
+119 best context switch time is 7707 cycles
+120 best context switch time is 7721 cycles
+121 best context switch time is 7742 cycles
+122 best context switch time is 7833 cycles
+123 best context switch time is 7840 cycles
+124 best context switch time is 7840 cycles
+125 best context switch time is 7847 cycles
+126 best context switch time is 7945 cycles
+127 best context switch time is 8029 cycles
+128 best context switch time is 8120 cycles
+129 best context switch time is 8155 cycles
+130 best context switch time is 8183 cycles
+131 best context switch time is 8225 cycles
+132 best context switch time is 8407 cycles
+133 best context switch time is 8463 cycles
+134 best context switch time is 8505 cycles
+135 best context switch time is 8568 cycles
+136 best context switch time is 8575 cycles
+137 best context switch time is 8785 cycles
+138 best context switch time is 8883 cycles
+139 best context switch time is 9730 cycles
+140 best context switch time is 10066 cycles
+141 best context switch time is 10283 cycles
+142 best context switch time is 10290 cycles
+143 best context switch time is 10297 cycles
+144 best context switch time is 10311 cycles
+145 best context switch time is 10332 cycles
+146 best context switch time is 10360 cycles
+147 best context switch time is 10535 cycles
+148 best context switch time is 10969 cycles
+149 best context switch time is 11249 cycles
+150 best context switch time is 11501 cycles
+151 best context switch time is 11795 cycles
+152 best context switch time is 12229 cycles
+153 best context switch time is 12355 cycles
+154 best context switch time is 12390 cycles
+155 best context switch time is 12691 cycles
+156 best context switch time is 13440 cycles
+157 best context switch time is 13783 cycles
+158 best context switch time is 13783 cycles
+159 best context switch time is 13804 cycles
+160 best context switch time is 13811 cycles
+161 best context switch time is 13832 cycles
+162 best context switch time is 13832 cycles
+163 best context switch time is 13860 cycles
+164 best context switch time is 13867 cycles
+165 best context switch time is 13937 cycles
+166 best context switch time is 13951 cycles
+167 best context switch time is 13958 cycles
+168 best context switch time is 13958 cycles
+169 best context switch time is 13958 cycles
+170 best context switch time is 13958 cycles
+171 best context switch time is 13979 cycles
+172 best context switch time is 13979 cycles
+173 best context switch time is 13993 cycles
+174 best context switch time is 14007 cycles
+175 best context switch time is 14021 cycles
+176 best context switch time is 14028 cycles
+177 best context switch time is 14035 cycles
+178 best context switch time is 14035 cycles
+179 best context switch time is 14042 cycles
+180 best context switch time is 14042 cycles
+181 best context switch time is 14049 cycles
+182 best context switch time is 14056 cycles
+183 best context switch time is 14063 cycles
+184 best context switch time is 14070 cycles
+185 best context switch time is 14070 cycles
+186 best context switch time is 14077 cycles
+187 best context switch time is 14098 cycles
+188 best context switch time is 14105 cycles
+189 best context switch time is 14112 cycles
+190 best context switch time is 14112 cycles
+191 best context switch time is 14119 cycles
+192 best context switch time is 14126 cycles
+193 best context switch time is 14175 cycles
+194 best context switch time is 14182 cycles
+195 best context switch time is 14203 cycles
+196 best context switch time is 14210 cycles
+197 best context switch time is 14210 cycles
+198 best context switch time is 14210 cycles
+199 best context switch time is 14210 cycles
+
