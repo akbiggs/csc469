@@ -1,5 +1,5 @@
 #!/bin/sh
 make forker
-./forker 10
+./forker 100
 sh ./forker_plot.sh
 okular forker.eps

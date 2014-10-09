@@ -123,8 +123,8 @@ included with the reported inactive cycles.
 
 To run this experiment, open the project folder and call "sh run_experiment_A". This will:
 1. Run the Makefile.
-2. Run the compiled program "tracker" with the argument of 100 inactive periods.
-3. Run the "forker_plot.sh" script 
+2. Run the compiled program "tracker" with the argument of 20 inactive periods.
+3. Run the "tracker_plot.sh" script 
 4. Run Okular to open a GUI window and show the plot. 
 
 The program "tracker", executes the the algorithm described above and outputs the results. It also creates a script which is used to generate a gnuplot graph.
@@ -175,24 +175,41 @@ Figure 6: Running the test for 1000 inactive periods
 k-best Average Context Switch Time: 0.003734 ms
 Average Context Switch Time:        0.016241 ms
 
+Figure 7: Running the test for 10 inactive periods under a heavy CPU load
+
+k-best Average Context Switch Time: 3.811873 ms
+Average Context Switch Time:        4.662390 ms
+
+<q2_2_10_busy>
+
 - Discussion:
 
-  From our method, 
+For our final result, we will say our estimated context switch is 0.003734ms, from the "Figure 6" experiement. That test includes the most data, so it is more likely to have a better result. Notice that the k-best is usually significantly lower than the average time. The average time is likely susceptible to errors where the CPU switches to another process completely.
 
   - How long do processes get to run?
+  From "Figure 4" and "Figure 5", you can see that processes generally get to run between 3ms and 7ms. It
+  looks like the scheduler is generally giving both the processes an equal amount of time. However, sometimes
+  the scheduler seems to give processes longer intervals, and sometimes smaller.
   
   - Is the length of the time slice affected by number of processes running?
-  - Surprises? Compared to expectations.
-  - Sources of error in the data?
+  In "Figure 7" you can see how when other processes are running, the time slice is kept on the smaller ends of
+  its variation (3 to 4ms), and the time between them is larger. The reported context switch time is not 
+  accurate in this case.
   
-- Scripts
+- Scripts:
 
+To run this experiment, open the project folder and call "sh run_experiment_B". This will:
+1. Run the Makefile.
+2. Run the compiled program "forker" with the argument of 100 inactive periods.
+3. Run the "forker_plot.sh" script 
+4. Run Okular to open a GUI window and show the plot.
 
 Part B: Measuring NUMA Effects 
 ------------------------------
 
-- Goal: We want to investigate the cost of accessing a memory node from various CPUs across the
-NUMA architecture.
+- Goal:
+
+We want to investigate the cost of accessing a memory node from various CPUs across the NUMA architecture.
 
 - Hardware:
 
